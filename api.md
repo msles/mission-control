@@ -52,3 +52,71 @@ So, splitting up the API into sections:
  │   │     commands           │
  ▼   ▼                        ▼
 ```
+
+Some ideas for the data present in this API (shown in TypeScript):
+
+```ts
+/**
+ * Represents lighting device.
+ * @example A 64x64 LED matrix
+ * const matrix = {
+ *  type: DisplayType.Matrix,
+ *  resolution: [64, 64]
+ * }
+ */
+type Display<T extends DisplayType> = {
+  type: T, // is it a matix, led strip, or something else?
+  resolution: [number, number] // [width, height] in pixels
+}
+
+/**
+ * The various types of lighting devices.
+ */
+enum DisplayType {
+  Matrix, // An LED Matrix
+  Strip   // A strip of LEDs (1xN)
+}
+
+/**
+ * A URL used to connect to a RIST video stream.
+ * Has the format rist://SERVER:PORT.
+ */
+type VideoStreamLink = string;
+
+/**
+ * Commands sent by mission control to control the lighting device.
+ * @example A command to set brightness to 25%
+ * const brightness25 = {
+ *  type: ControlCommandType.Brightness
+ *  level: 0.25
+ * }
+ * @example A command to power off the device
+ * const poweroff = {
+ *  type: ControlCommandType.PowerOff
+ * }
+ */
+type ControlCommand =
+    BrightnessCommand
+  | PowerOffCommand
+
+/**
+ * The various types of control commands.
+ */
+enum ControlCommandType {
+  Brightness, // change the brightness of the display
+  PowerOff // turn of the device completely (as an example)
+}
+
+/**
+ * A command for changing the display brightness.
+ */
+interface BrightnessCommand extends BaseCommand<ControlCommandType.Brightness> {
+  level: number // brightness level between 0 and 1.
+}
+
+interface PowerOffCommand extends BaseCommand<ControlCommandType.PowerOff> {};
+
+interface BaseCommand<T extends ControlCommandType> {
+  type: T
+}
+```
