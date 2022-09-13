@@ -10,6 +10,7 @@ The API will need to serve the following purposes:
 So, splitting up the API into sections:
 
 ## Player API
+* How users see which lighting devices are connected
 * How players interact with the active mode
   * Joining the game
   * Moving game pieces
@@ -25,3 +26,29 @@ So, splitting up the API into sections:
 * How lighting devices connect to the control server
 * How lighting devices receive info on what to display
 * How players receive info on what's currently being displayed (may depend on mode)
+
+```
+┌─────────┐          ┌─────────┐
+│ Mission │          │Lighting │
+│ Control │          │ Device  │
+└┬────────┘          └────────┬┘
+ │    establish connection    │
+ ◀─────send device type, ─────┤
+ │         resolution         │
+ │                            │
+ ├────send link to video ─────▶
+ │          stream            │
+ ├───┐                        │
+ │   ◀──────connect to ───────┤
+ │   │     video stream       │
+ │   │                        │
+ │   ├────send frames of ─────▶
+ │   │         video          │
+ │   │                        │
+ ◀───┼────send sensor ────────┤
+ │   │       data             │
+ │   │                        │
+ ├───┼───send control ────────▶
+ │   │     commands           │
+ ▼   ▼                        ▼
+```
