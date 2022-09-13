@@ -34,3 +34,4 @@ class StaticImageMode(Mode):
       return [self.render_region(display) for display in layout]
 ```
 
+The mode for pong will be more complex, as the get_api method would need to also represent the WebSocket messages used to move paddles, place obstacles, etc.
