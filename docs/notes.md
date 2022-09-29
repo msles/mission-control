@@ -17,8 +17,8 @@ We use the Bonnet, and didn't solder it yet.
 ## Install and run [PixelPusher](https://github.com/hzeller/rpi-matrix-pixelpusher)
 
 ```sh
-git clone https://github.com/hzeller/rpi-matrix-pixelpusher.git
-cd rgb-matrix-pixelpusher
+git clone --recursive https://github.com/hzeller/rpi-matrix-pixelpusher.git
+cd rpi-matrix-pixelpusher
 make
 ```
 
