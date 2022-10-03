@@ -36,6 +36,7 @@
   "dependencies": {
     "canvas": "^2.10.1",
     "express": "^4.18.1",
-    "node-pixel-pusher": "^1.0.4"
+    "node-pixel-pusher": "^1.0.4",
+    "zod": "^3.19.1"
   }
 }
