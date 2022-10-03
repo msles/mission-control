@@ -1,3 +1,6 @@
+/**
+ * This is a DEMO file, used for testing just 2 of the displays.
+ */
 import {
   createCanvas, loadImage,
   Image, ImageData, Canvas,
