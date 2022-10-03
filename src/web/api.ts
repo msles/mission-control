@@ -10,7 +10,7 @@ type WebAPI = {
   /**
    * HTTP endpoints for this API
    */
-  endpoints: readonly Endpoint<unknown,unknown>[]
+  endpoints: readonly Endpoint<unknown, unknown>[]
   /**
    * WebSocket channels for this API
    */

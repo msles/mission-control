@@ -10,6 +10,10 @@ type Endpoint<Params, T> = {
    */
   type: EndpointType,
   /**
+   * A unique name for the endpoint (requests will go to /api/<prefix>/<name>).
+   */
+  name: string,
+  /**
    * What privileges are required to use this endpoint?
    */
   privileges: Privileges,
@@ -21,16 +25,12 @@ type Endpoint<Params, T> = {
   /**
    * Execute the endpoint's logic to produce the result.
    */
-  run: (params: Params) => APIResult<T>
+  run: (params: Params) => Promise<T>
 }
 
 export enum EndpointType {
   GET,
   POST
 }
-
-type APIResult<T> = APIFail | APISucess<T>;
-type APIFail = { error: string };
-type APISucess<T> = { result: T };
 
 export default Endpoint;
