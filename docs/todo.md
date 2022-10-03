@@ -21,3 +21,4 @@
 - [ ] Deploy to Google Cloud
   - [ ] Static site for React
   - [ ] Docker container for server
+- [ ] Sending/Receiving WiFi config over NFC
