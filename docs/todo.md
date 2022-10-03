@@ -1,14 +1,14 @@
 # TODO
 
-- [ ] Formally Define APIs
+- [ ] **Formally Define APIs**
   - [ ] Device -> Server connection
   - [ ] Player <-> Server communication
   - [ ] Display Layout
 - [ ] Implement Modes
-  - [ ] Draw mode
+  - [ ] **Draw mode**
   - [ ] Pong mode
 - [ ] Create React Client
-  - [ ] Arranging Displays
+  - [ ] **Arranging Displays**
     - [ ] View current layout
     - [ ] Move displays around
   - [ ] Draw mode
@@ -21,4 +21,4 @@
 - [ ] Deploy to Google Cloud
   - [ ] Static site for React
   - [ ] Docker container for server
-- [ ] Sending/Receiving WiFi config over NFC
+- [ ] **Sending/Receiving WiFi config over NFC**
