@@ -44,3 +44,12 @@ done
 ```sh
 npm start
 ```
+
+## Bandwidth usage
+64x64 pixels
+3 color channels
+256 values of color depth = 8 bits
+4 displays
+30 FPS
+= 64 * 64 * 3 * 8 * 4 * 30 bits/sec
+= 11.25 MBits/sec or 2.81 MBits/sec per display
