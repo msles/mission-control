@@ -1,0 +1,23 @@
+# TODO
+
+- [ ] Formally Define APIs
+  - [ ] Device -> Server connection
+  - [ ] Player <-> Server communication
+  - [ ] Display Layout
+- [ ] Implement Modes
+  - [ ] Draw mode
+  - [ ] Pong mode
+- [ ] Create React Client
+  - [ ] Arranging Displays
+    - [ ] View current layout
+    - [ ] Move displays around
+  - [ ] Draw mode
+    - [ ] Sync display state
+    - [ ] Change pixel colors
+  - [ ] Pong mode
+    - [ ] Sync game state
+    - [ ] Move pong paddles
+    - [ ] Place obstacles
+- [ ] Deploy to Google Cloud
+  - [ ] Static site for React
+  - [ ] Docker container for server
