@@ -1,3 +1,4 @@
 import { Privileges } from "./privileges";
+import User from "./user";
 
-export type {Privileges};
+export {User, Privileges};
