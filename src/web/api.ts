@@ -14,7 +14,7 @@ type WebAPI = {
   /**
    * WebSocket channels for this API
    */
-  channels: readonly Channel<unknown>[]
+  channels: readonly Channel<any>[]
   
 }
 
