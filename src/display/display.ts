@@ -21,4 +21,4 @@ enum DisplayType {
 }
 
 export default Display;
-export type {DisplayType};
+export {DisplayType};
