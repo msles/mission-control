@@ -1,5 +1,6 @@
-import {Privileges} from "../users";
+import {User, Privileges} from "../users";
 import {Parser} from "./parse";
+import {string, z} from "zod";
 
 /**
  * Represents a WebSocket channel.
@@ -22,7 +23,19 @@ type Channel<Params> = {
   /**
    * The function to run when a message is received on this channel.
    */
-  onReceived: (params: Params) => void
+  onReceived: (params: Params, user: User<unknown>) => void
+}
+
+const ChannelMessage = z.object({
+  mode: z.string(),
+  channel: z.string()
+});
+
+type ChannelMessage = z.infer<typeof ChannelMessage>;
+
+export function parseChannelMessage(data: unknown) {
+  return ChannelMessage.passthrough().safeParse(data);
 }
 
 export default Channel;
+export type {ChannelMessage};

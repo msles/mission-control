@@ -1,4 +1,4 @@
-import { Privileges } from "../users";
+import { Privileges, User } from "../users";
 import { Parser } from "./parse";
 
 /**
@@ -25,7 +25,7 @@ type Endpoint<Params, T> = {
   /**
    * Execute the endpoint's logic to produce the result.
    */
-  run: (params: Params) => Promise<T>
+  run: (params: Params, user: User<unknown>) => Promise<T>
 }
 
 export enum EndpointType {
