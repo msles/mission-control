@@ -8,7 +8,20 @@ import WebAPI from "../web/api";
  */
 interface Mode {
 
+  /**
+   * Creates the http endpoints and websocket channels for this mode.
+   */
   defineApi(): WebAPI
+
+  /**
+   * Initialize the mode (invoked when the active mode is switched to this mode).
+   */
+  start(layout: Layout): void
+
+  /**
+   * Clean up the mode when the active mode is switched away from this mode.
+   */
+  stop(): void
 
   /**
    * Draw the mode as a set of images to be shown on the given displays.
