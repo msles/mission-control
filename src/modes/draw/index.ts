@@ -8,6 +8,7 @@ import { Privileges } from "../../users";
 import { z } from "zod";
 import { createZodParser } from "../../web/parse";
 import Layout from "../../layout";
+import { layoutBounds } from "../../layout/layout";
 
 const PaintPixel = z.object({
   coordinates: z.tuple([z.number(), z.number()]),
@@ -23,10 +24,14 @@ type PaintCommand = z.infer<typeof PaintCommand>;
  */
 class DrawMode implements Mode {
 
-  private readonly canvases: Map<Display, Context2D>;
+  private readonly canvas: Context2D
 
-  constructor() {
-    this.canvases = new Map();
+  constructor(layout: Layout) {
+    const [width, height] = layoutBounds(layout);
+    this.canvas = createCanvas(
+      width,
+      height
+    ).getContext('2d');
   }
 
   defineApi(): WebAPI {
@@ -44,36 +49,31 @@ class DrawMode implements Mode {
   }
 
   private paint(pixels: PaintCommand) {
-    const display: Display = { type: DisplayType.Matrix, resolution: [64, 64] }
-    const ctx = this.canvases.get(display);
-    if (ctx !== undefined) {
-      pixels.forEach(pixel => ctx.putImageData(
-        // rgba = [red, green, blue, alpha]
-        new ImageData(Uint8ClampedArray.from([...pixel.color, 255]), 1, 1),
-        pixel.coordinates[0], pixel.coordinates[1]
-      ));
-    }
+    // TODO: check that the pixel coordinates are within the bounds of the canvas.
+    pixels.forEach(pixel => this.canvas.putImageData(
+      // rgba = [red, green, blue, alpha]
+      new ImageData(Uint8ClampedArray.from([...pixel.color, 255]), 1, 1),
+      pixel.coordinates[0], pixel.coordinates[1]
+    ));
   }
 
   start(layout: Layout): void {
-    layout.forEach(({display}) => this.canvases.set(
-      display,
-      createCanvas(display.resolution[0], display.resolution[1])
-        .getContext('2d'))
-    );
+    // Nothing to do
   }
 
   stop(): void {
     // Nothing to do
   }
 
-  render(layout: Layout): Map<Display<DisplayType>, ImageData> {
+  render(layout: Layout): Map<Display, ImageData> {
     return new Map(
-      Array.from(this.canvases.entries())
-           .map(([display, ctx]) => [
-              display,
-              ctx.getImageData(0, 0, display.resolution[0], display.resolution[1])
-           ])
+      layout.map(({display, position}) => [
+        display,
+        this.canvas.getImageData(
+          position[0], position[1],
+          display.resolution[0], display.resolution[1]
+        )
+      ])
     );
   }
 
