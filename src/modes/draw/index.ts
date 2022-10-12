@@ -10,10 +10,15 @@ import { createZodParser } from "../../web/parse";
 import Layout from "../../layout";
 import { layoutBounds } from "../../layout/layout";
 
+// A Zod Schema for a natural number
+const Natural = z.number().int().positive();
+// A Zod Schema for a positive 8-bit integer (0-255).
+const PosInt8 = Natural.lt(256);
+
 const PaintPixel = z.object({
-  coordinates: z.tuple([z.number(), z.number()]),
-  color: z.tuple([z.number(), z.number(), z.number()])
-})
+  coordinates: z.tuple([Natural, Natural]),
+  color: z.tuple([PosInt8, PosInt8, PosInt8])
+});
 
 const PaintCommand = z.array(PaintPixel);
 
@@ -38,6 +43,7 @@ class DrawMode implements Mode {
     const paintChannel = {
       name: 'paint',
       privileges: Privileges.Player,
+      // TODO: check that the pixel coordinates are within the bounds of the canvas.
       parse: createZodParser(PaintCommand),
       onReceived: (pixels: PaintCommand) => this.paint(pixels)
     }
@@ -49,7 +55,6 @@ class DrawMode implements Mode {
   }
 
   private paint(pixels: PaintCommand) {
-    // TODO: check that the pixel coordinates are within the bounds of the canvas.
     pixels.forEach(pixel => this.canvas.putImageData(
       // rgba = [red, green, blue, alpha]
       new ImageData(Uint8ClampedArray.from([...pixel.color, 255]), 1, 1),
