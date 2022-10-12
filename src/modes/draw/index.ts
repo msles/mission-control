@@ -1,14 +1,11 @@
-import { ImageData } from "canvas";
+import { ImageData, createCanvas, CanvasRenderingContext2D as Context2D } from "canvas";
 import Display from "../../display";
-import { DisplayType } from "../../display/display";
-import { createCanvas, CanvasRenderingContext2D as Context2D } from "canvas";
 import Mode from "../mode";
 import WebAPI from "../../web/api";
 import { Privileges } from "../../users";
+import Layout, {layoutBounds} from "../../layout";
 import { z } from "zod";
 import { createZodParser } from "../../web/parse";
-import Layout from "../../layout";
-import { layoutBounds } from "../../layout/layout";
 
 // A Zod Schema for a natural number
 const Natural = z.number().int().positive();
