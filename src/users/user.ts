@@ -6,8 +6,8 @@ import { Privileges } from "./privileges";
  */
 class User<Connection> {
 
-  private readonly connection: Connection;
-  private readonly privileges: Privileges;
+  readonly connection: Connection;
+  readonly privileges: Privileges;
 
   constructor(connection: Connection, privileges: Privileges) {
     this.connection = connection;

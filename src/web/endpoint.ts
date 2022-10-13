@@ -10,7 +10,7 @@ type Endpoint<Params, T> = {
    */
   type: EndpointType,
   /**
-   * A unique name for the endpoint (requests will go to /api/<prefix>/<name>).
+   * A unique name for the endpoint (requests will go to /api/mode/<prefix>/<name>).
    */
   name: string,
   /**
@@ -29,8 +29,9 @@ type Endpoint<Params, T> = {
 }
 
 export enum EndpointType {
-  GET,
-  POST
+  FETCH,
+  COMMAND
+  // TODO: add UPLOAD endpoint type
 }
 
 export default Endpoint;

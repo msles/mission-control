@@ -1,6 +1,6 @@
 import {User, Privileges} from "../users";
 import {Parser} from "./parse";
-import {string, z} from "zod";
+import {z} from "zod";
 
 /**
  * Represents a WebSocket channel.

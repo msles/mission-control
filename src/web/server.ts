@@ -5,6 +5,12 @@ import WebAPI from "./api";
 import Endpoint, { EndpointType } from "./endpoint";
 import { Privileges, User } from "../users";
 import Channel, { parseChannelMessage } from "./channel";
+import Mode from "../modes";
+import { createZodParser, ParseBuilder } from "./parse";
+import {z} from "zod";
+
+// The schema for requesting a mode switch
+const ModeSwitchCommand = z.object({name: z.string()});
 
 /**
  * The mission-control web server.
@@ -15,26 +21,67 @@ class Server {
   private readonly app: Express;
   private readonly users: Set<User<WebSocket>>;
   private readonly channels: Map<string, readonly Channel<unknown>[]>;
+  private readonly modes: Map<string, Mode>;
 
-  constructor() {
+  constructor(modes: readonly Mode[], onModeRequested: ModeRequestHandler) {
+    const modeApis = modes.map(mode => [mode, mode.defineApi()] as const);
     this.app = express();
     // Parse the request body as JSON
     this.app.use(express.json());
     this.users = new Set();
     this.channels = new Map();
+    this.modes = new Map(modeApis.map(([mode, api]) => [api.prefix, mode]));
+    this.configureAll(modeApis.map(([_mode, api]) => api));
+    this.configureModeSwitch(onModeRequested);
+  }
+
+  broadcast(message: unknown) {
+    Array.from(this.users).forEach(user => {
+      user.connection.send(JSON.stringify(message));
+    });
   }
 
   /**
    * Add the HTTP endpoints and WebSocket channels defined
    * by the given WebAPI.
    */
-  configure(api: WebAPI): this {
+  private configure(api: WebAPI): this {
     // Configure HTTP endpoints
     api.endpoints.forEach(endpoint => {
-      this.createEndpoint(`/api/${api.prefix}/${endpoint.name}`, endpoint)
+      this.createEndpoint(`/api/mode/${api.prefix}/${endpoint.name}`, endpoint)
     });
     // Set WebSocket channels
     this.channels.set(api.prefix, api.channels);
+    return this;
+  }
+
+  /**
+   * Configure a set of APIs
+   */
+  private configureAll(apis: readonly WebAPI[]): this {
+    apis.forEach(api => this.configure(api));
+    return this;
+  }
+
+  /**
+   * Add the mode switch endpoint, which will invoke the given callback.
+   */
+  private configureModeSwitch(onModeRequested: ModeRequestHandler): this {
+    const switchMode: Endpoint<Mode, void> = {
+      type: EndpointType.COMMAND,
+      name: 'switch-mode',
+      privileges: Privileges.Admin,
+      parse: new ParseBuilder(createZodParser(ModeSwitchCommand))
+        .chain(({name}) => {
+          const mode = this.modes.get(name);
+          return mode ?
+            {success: true, data: mode} :
+            {success: false, error: `mode "${name}" is not supported`};
+        })
+        .build(),
+      run: async mode => onModeRequested(mode)
+    }
+    this.createEndpoint(`/api/switch-mode`, switchMode)
     return this;
   }
 
@@ -87,7 +134,7 @@ class Server {
    */
   private createEndpoint<Params, Result>(url: string, endpoint: Endpoint<Params, Result>) {
     // TODO: use session tokens to differentiate 'players' from 'admins'
-    if (endpoint.type === EndpointType.GET) {
+    if (endpoint.type === EndpointType.FETCH) {
       this.app.get(url, (request, response) => this.respond(request.params, endpoint, response));
     }
     else {
@@ -132,5 +179,10 @@ class Server {
   }
 
 }
+
+/**
+ * A callback that handles a mode switch request.
+ */
+type ModeRequestHandler = (mode: Mode) => void;
 
 export default Server;

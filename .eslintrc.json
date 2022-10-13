@@ -17,6 +17,7 @@
     "plugins": [
     ],
     "rules": {
+        "require-await": "off"
     },
     "settings": {
     }

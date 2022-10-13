@@ -1,6 +1,7 @@
 import { ImageData } from "canvas";
 import Display from "../display";
 import Layout from "../layout";
+import { LayoutStateReadable } from "../layout/layout-state";
 import WebAPI from "../web/api";
 
 /**
@@ -35,5 +36,12 @@ interface Mode {
  * The graphics to show across multiple displays.
  */
 type Frame = Map<Display,ImageData>;
+
+export type BroadcastFn = (message: unknown) => void
+export type ModeBuilder = (
+  broadcast: BroadcastFn,
+  layoutState: LayoutStateReadable
+  // TODO: UsersReadable. How does a mode know when a user has joined or left?
+) => Mode;
 
 export default Mode;

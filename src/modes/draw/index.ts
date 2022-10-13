@@ -1,6 +1,6 @@
 import { ImageData, createCanvas, CanvasRenderingContext2D as Context2D } from "canvas";
 import Display from "../../display";
-import Mode from "../mode";
+import Mode, { BroadcastFn, ModeBuilder } from "../mode";
 import WebAPI from "../../web/api";
 import { Privileges } from "../../users";
 import Layout, {layoutBounds} from "../../layout";
@@ -26,14 +26,12 @@ type PaintCommand = z.infer<typeof PaintCommand>;
  */
 class DrawMode implements Mode {
 
-  private readonly canvas: Context2D
+  private readonly broadcast: BroadcastFn;
+  private canvas: Context2D
 
-  constructor(layout: Layout) {
-    const [width, height] = layoutBounds(layout);
-    this.canvas = createCanvas(
-      width,
-      height
-    ).getContext('2d');
+  constructor(broadcast: BroadcastFn) {
+    this.broadcast = broadcast;
+    this.canvas = createCanvas(0, 0).getContext('2d');
   }
 
   defineApi(): WebAPI {
@@ -60,7 +58,11 @@ class DrawMode implements Mode {
   }
 
   start(layout: Layout): void {
-    // Nothing to do
+    const [width, height] = layoutBounds(layout);
+    this.canvas = createCanvas(
+      width,
+      height
+    ).getContext('2d');
   }
 
   stop(): void {
@@ -79,6 +81,10 @@ class DrawMode implements Mode {
     );
   }
 
+  static builder(): ModeBuilder {
+    return broadcast => new DrawMode(broadcast);
+  }
+
 }
 
-export default DrawMode;
+export default DrawMode.builder();

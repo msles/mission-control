@@ -1,3 +1,4 @@
-import Mode from "./mode";
+import Mode, {ModeBuilder} from "./mode";
 
+export {ModeBuilder};
 export default Mode;
