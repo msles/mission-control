@@ -2,7 +2,7 @@
  * This is a DEMO file, used for testing just 2 of the displays.
  */
 import {Service, Device} from "node-pixel-pusher";
-import { Graphics } from "./graphics";
+import { Graphics } from "../graphics";
 
 class PixelServer {
 
