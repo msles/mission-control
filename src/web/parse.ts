@@ -25,3 +25,30 @@ export function createZodParser<T>(schema: Schema<T>): Parser<T> {
     }
   }
 }
+
+/**
+ * A builder class that allows you to chain parsers together.
+ */
+export class ParseBuilder<T> {
+
+  private readonly parser: Parser<T>;
+
+  constructor(parser: Parser<T>) {
+    this.parser = parser;
+  }
+
+  build(): Parser<T> {
+    return this.parser;
+  }
+  
+  chain<U>(transform: (from: T) => ParseResult<U>): ParseBuilder<U> {
+    return new ParseBuilder((query: unknown) => {
+      const parsedT = this.parser(query);
+      if (!parsedT.success) {
+        return parsedT;
+      }
+      return transform(parsedT.data);
+    });
+  }
+
+}
