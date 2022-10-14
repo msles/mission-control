@@ -35,7 +35,7 @@ interface Mode {
 /**
  * The graphics to show across multiple displays.
  */
-type Frame = Map<Display,ImageData>;
+export type Frame = Map<Display,ImageData>;
 
 export type BroadcastFn = (message: unknown) => void
 export type ModeBuilder = (
