@@ -5,7 +5,7 @@ import Layout, { Position } from "./layout";
 /**
  * A mutable layout state where displays can be added, removed, and moved.
  */
-export interface LayoutStateWritable {
+export interface LayoutStateWritable extends LayoutStateReadable {
 
   /**
    * Add a display to the layout at the given position.
@@ -34,6 +34,8 @@ export interface LayoutStateReadable {
    */
   onLayoutChanged(handler: LayoutChangeHandler): LayoutChangeUnsubscribe;
 
+  get(): Layout;
+
 }
 
 type LayoutChangeHandler = (layout: Layout) => void;
@@ -42,7 +44,7 @@ type LayoutChangeUnsubscribe = () => void;
 /**
  * Manages the current display layout.
  */
-class LayoutState implements LayoutStateReadable, LayoutStateWritable {
+class LayoutState implements LayoutStateWritable {
 
   private layout: Layout;
   private readonly handlers: Set<LayoutChangeHandler>;
