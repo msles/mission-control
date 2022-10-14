@@ -1,11 +1,12 @@
 import LayoutState from "./layout/layout-state";
 import Mode, { ModeBuilder } from "./modes";
+import { PixelServer } from "./pixels";
 import WebServer from "./web/server";
 
 class MissionControl {
 
   private readonly webServer: WebServer;
-  // private readonly pixelServer: PixelServer;
+  private readonly pixelServer: PixelServer;
   private currentMode: Mode;
   private layout: LayoutState;
 
@@ -19,13 +20,18 @@ class MissionControl {
       this.layout
     ));
     this.webServer = new WebServer(modes, mode => this.switchMode(mode));
-    // this.pixelServer = new PixelServer();
     this.currentMode = modes[0];
+    this.pixelServer = new PixelServer(
+      this.layout,
+      // Inefficient method of rendering... re-renders for each display
+      () => this.currentMode.render(this.layout.get())
+    );
   }
 
   start() {
     this.currentMode.start(this.layout.get());
     this.webServer.start(8000);
+    this.pixelServer.start();
   }
 
   private switchMode(nextMode: Mode) {
