@@ -4,7 +4,7 @@ import { Privileges } from "./privileges";
  * Represents a user (player or administrator) for remembering
  * clients accross http requests / websocket messages.
  */
-class User<Connection> {
+class User<Connection=unknown> {
 
   readonly connection: Connection;
   readonly privileges: Privileges;
