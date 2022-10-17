@@ -28,14 +28,11 @@ type Channel<Params> = {
 
 const ChannelMessage = z.object({
   mode: z.string(),
-  channel: z.string()
+  channel: z.string(),
+  message: z.unknown()
 });
 
 type ChannelMessage = z.infer<typeof ChannelMessage>;
 
-export function parseChannelMessage(data: unknown) {
-  return ChannelMessage.passthrough().safeParse(data);
-}
-
 export default Channel;
-export type {ChannelMessage};
+export {ChannelMessage};

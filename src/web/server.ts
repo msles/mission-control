@@ -4,9 +4,9 @@ import http from "http";
 import WebAPI from "./api";
 import Endpoint, { EndpointType } from "./endpoint";
 import { Privileges, User } from "../users";
-import Channel, { parseChannelMessage } from "./channel";
+import Channel, { ChannelMessage } from "./channel";
 import Mode from "../modes";
-import { createZodParser, ParseBuilder } from "./parse";
+import { createZodParser, ParseBuilder, Parser, ParseResult } from "./parse";
 import {z} from "zod";
 
 // The schema for requesting a mode switch
@@ -109,14 +109,28 @@ class Server {
   /**
    * Parse a WebSocket message and forward it to the corresponding WebSocket channel.
    */
-  private onChannelMessage(raw: RawData) {
-    const parseResult = parseChannelMessage(JSON.parse(raw.toString('utf8')));
+  private onChannelMessage(buffer: RawData) {
+    const json = this.parseJSONBuffer(buffer);
+    if (!json.success) {
+      return;
+    }
+    const parseResult = ChannelMessage.safeParse(json.data);
     if (parseResult.success) {
-      const {mode, channel} = parseResult.data;
+      const {mode, channel, message} = parseResult.data;
       // TODO: check if mode matches the current mode.
       this.getChannels(mode)
         .filter(ch => ch.name === channel)
-        .forEach(ch => this.parseAndReceive(parseResult.data, ch));
+        .forEach(ch => this.parseAndReceive(message, ch));
+    }
+  }
+
+  private parseJSONBuffer(buffer: RawData): ParseResult<unknown> {
+    try {
+      const data: unknown = JSON.parse(buffer.toString('utf8'));
+      return {success: true, data};
+    }
+    catch {
+      return {success: false, error: 'Failed to parse JSON value'};
     }
   }
 
