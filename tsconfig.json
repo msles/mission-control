@@ -3,6 +3,7 @@
   "include": ["src/**/*.ts"],
   "compilerOptions": {
     "outDir": "build",
-    "incremental": true
+    "incremental": true,
+    "sourceMap": true
   }
 }
