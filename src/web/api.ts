@@ -5,8 +5,7 @@ import Channel from "./channel";
  * Defines a HTTP and WebSocket API.
  */
 type WebAPI = {
-
-  prefix: string,
+  
   /**
    * HTTP endpoints for this API
    */

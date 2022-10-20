@@ -10,7 +10,6 @@ class PongMode implements Mode {
 
   defineApi(): WebAPI {
     return {
-      prefix: 'pong',
       // * endpoint / channel for users to join a game
       // * endpoint / channel for admins to start a game
       // * channel for moving a paddle

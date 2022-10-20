@@ -44,7 +44,6 @@ class DrawMode implements Mode {
       onReceived: (pixels: PaintCommand) => this.paint(pixels)
     }
     return {
-      prefix: 'draw',
       endpoints: [],
       channels: [paintChannel]
     }
