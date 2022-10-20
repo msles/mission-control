@@ -2,18 +2,22 @@
 
 - [ ] **Formally Define APIs**
   - [ ] Device -> Server connection
-  - [ ] Player <-> Server communication
-  - [ ] Display Layout
+    - [ ] Persistent connection (disconnect behavior)
+  - [x] Player <-> Server communication
+    - [ ] Send users layout
+  - [x] Display Layout
 - [ ] Implement Modes
   - [ ] **Draw mode**
-  - [ ] Pong mode
+  - [ ] **Pong mode**
+  - [ ] Only send modes updates (layouts, endpoints, channels) when
+        they are active.
 - [ ] Create React Client
   - [ ] **Arranging Displays**
     - [ ] View current layout
     - [ ] Move displays around
   - [ ] Draw mode
     - [ ] Sync display state
-    - [ ] Change pixel colors
+    - [x] Change pixel colors
   - [ ] Pong mode
     - [ ] Sync game state
     - [ ] Move pong paddles
