@@ -4,7 +4,7 @@ import { PixelServer } from "./pixels";
 import WebAPI from "./web/api";
 import Endpoint, { EndpointType } from "./web/endpoint";
 import {z} from "zod";
-import { createZodParser, ParseBuilder } from "./web/parse";
+import { createZodParser, ParseBuilder, WithParseStage } from "./web/parse";
 import WebServer from "./web/server";
 import { Privileges } from "./users";
 
@@ -46,7 +46,10 @@ class MissionControl {
 
   private configureWebServer(): void {
     Array.from(this.modes.entries()).forEach(([name, mode]) => {
-      this.webServer.configure(`mode/${name}`, mode.defineApi());
+      this.webServer.configure(
+        `mode/${name}`,
+        this.wrapAPI(mode, mode.defineApi())
+      );
     });
     this.webServer.configure('admin', this.adminAPI());
   }
@@ -89,6 +92,29 @@ class MissionControl {
       )
     );
     return mode;
+  }
+
+  /**
+   * Ensures an APIs channels and endpoints are not executed when the given
+   * mode is not active.
+   */
+  private wrapAPI(mode: Mode, api: WebAPI): WebAPI {
+    return {
+      endpoints: api.endpoints.map(endpoint => this.wrapParser(mode, endpoint)),
+      channels: api.channels.map(channel => this.wrapParser(mode, channel))
+    }
+  }
+
+  private wrapParser<P, T extends WithParseStage<P>>(mode: Mode, withParseStage: T): T {
+    return {
+      ...withParseStage,
+      parse: params => {
+        if (this.currentMode === mode) {
+          return withParseStage.parse(params);
+        }
+        return {success: false, error: "that mode is no longer active"};
+      }
+    }
   }
 
 }

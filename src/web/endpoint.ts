@@ -1,10 +1,10 @@
 import { Privileges, User } from "../users";
-import { Parser } from "./parse";
+import { WithParseStage } from "./parse";
 
 /**
  * Describes an HTTP API endpoint.
  */
-type Endpoint<Params, T> = {
+type Endpoint<Params, T> = WithParseStage<Params> & {
   /**
    * What type of request should this endpoint respond to?
    */
@@ -17,11 +17,6 @@ type Endpoint<Params, T> = {
    * What privileges are required to use this endpoint?
    */
   privileges: Privileges,
-  /**
-   * Pareses the request parameters (GET query or POST body depending
-   * on the enndpoint type).
-   */
-  parse: Parser<Params>,
   /**
    * Execute the endpoint's logic to produce the result.
    */

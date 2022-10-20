@@ -1,11 +1,11 @@
 import {User, Privileges} from "../users";
-import {Parser} from "./parse";
+import {WithParseStage} from "./parse";
 import {z} from "zod";
 
 /**
  * Represents a WebSocket channel.
  */
-type Channel<Params> = {
+type Channel<Params> = WithParseStage<Params> & {
   /**
    * The name of the WebSocket channel. Only messages with this name
    * will be received on this channel.
@@ -16,10 +16,6 @@ type Channel<Params> = {
    * channel?
    */
   privileges: Privileges,
-  /**
-   * Parse messages on this channel.
-   */
-  parse: Parser<Params>,
   /**
    * The function to run when a message is received on this channel.
    */

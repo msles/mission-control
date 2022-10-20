@@ -9,7 +9,7 @@
 - [ ] Implement Modes
   - [ ] **Draw mode**
   - [ ] **Pong mode**
-  - [ ] Only send modes updates (layouts, endpoints, channels) when
+  - [x] Only send modes updates (layouts, endpoints, channels) when
         they are active.
 - [ ] Create React Client
   - [ ] **Arranging Displays**

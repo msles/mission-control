@@ -52,3 +52,15 @@ export class ParseBuilder<T> {
   }
 
 }
+
+/**
+ * Represents a container that runs the parser before
+ * doing anything else.
+ */
+export type WithParseStage<P> = {
+  /**
+   * A parser to evaluate on an unknown input. The input
+   * is only processed further if the parser succeeds.
+   */
+  parse: Parser<P>
+}
