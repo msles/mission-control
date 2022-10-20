@@ -9,6 +9,7 @@
   "scripts": {
     "build": "tsc",
     "start": "npm run build && node .",
+    "client": "npm run build && node ./build/client.js",
     "test": "jest",
     "lint": "npx eslint src"
   },
