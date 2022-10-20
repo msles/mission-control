@@ -35,8 +35,12 @@ class Server {
     this.configureModeSwitch(onModeRequested);
   }
 
-  broadcast(message: unknown) {
-    Array.from(this.users).forEach(user => {
+  broadcast(message: unknown, onlyUsers?: Set<User>) {
+    const allUsers = Array.from(this.users);
+    const users = onlyUsers ?
+      allUsers.filter(user => onlyUsers.has(user)) :
+      allUsers;
+    users.forEach(user => {
       user.connection.send(JSON.stringify(message));
     });
   }
