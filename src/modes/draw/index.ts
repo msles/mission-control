@@ -3,12 +3,12 @@ import Display from "../../display";
 import Mode, { BroadcastFn, ModeBuilder } from "../mode";
 import WebAPI from "../../web/api";
 import { Privileges } from "../../users";
-import Layout, {layoutBounds} from "../../layout";
+import Layout, {layoutBounds, LayoutStateReadable} from "../../layout";
 import { z } from "zod";
 import { createZodParser } from "../../web/parse";
 
 // A Zod Schema for a natural number
-const Natural = z.number().int().positive();
+const Natural = z.number().int().gte(0);
 // A Zod Schema for a positive 8-bit integer (0-255).
 const PosInt8 = Natural.lt(256);
 
@@ -29,9 +29,10 @@ class DrawMode implements Mode {
   private readonly broadcast: BroadcastFn;
   private canvas: Context2D
 
-  constructor(broadcast: BroadcastFn) {
+  constructor(broadcast: BroadcastFn, layoutState: LayoutStateReadable) {
     this.broadcast = broadcast;
-    this.canvas = createCanvas(0, 0).getContext('2d');
+    this.canvas = createCanvas(1, 1).getContext('2d');
+    layoutState.onLayoutChanged(layout => this.start(layout));
   }
 
   defineApi(): WebAPI {
@@ -60,8 +61,8 @@ class DrawMode implements Mode {
   start(layout: Layout): void {
     const [width, height] = layoutBounds(layout);
     this.canvas = createCanvas(
-      width,
-      height
+      Math.max(width, 1),
+      Math.max(height, 1)
     ).getContext('2d');
   }
 
@@ -82,7 +83,7 @@ class DrawMode implements Mode {
   }
 
   static builder(): ModeBuilder {
-    return broadcast => new DrawMode(broadcast);
+    return (broadcast, layoutState) => new DrawMode(broadcast, layoutState);
   }
 
 }
