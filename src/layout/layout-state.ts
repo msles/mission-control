@@ -84,4 +84,32 @@ class LayoutState implements LayoutStateWritable {
 
 }
 
+/**
+ * A readable layout state that only emits changes when the condition
+ * evaluates to true.
+ */
+export class LayoutStateConditional implements LayoutStateReadable {
+
+  private readonly source: LayoutStateReadable;
+  private readonly condition: () => boolean
+
+  constructor(source: LayoutStateReadable, condition: () => boolean) {
+    this.source = source;
+    this.condition = condition;
+  }
+
+  onLayoutChanged(handler: LayoutChangeHandler): LayoutChangeUnsubscribe {
+    return this.source.onLayoutChanged((...args) => {
+      if (this.condition()) {
+        handler(...args);
+      }
+    });
+  }
+
+  get() {
+    return this.source.get();
+  }
+
+}
+
 export default LayoutState;

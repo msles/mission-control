@@ -1,6 +1,6 @@
 import Layout, {layoutBounds} from "./layout";
-import { LayoutStateReadable, LayoutStateWritable } from "./layout-state";
+import { LayoutStateReadable, LayoutStateWritable, LayoutStateConditional } from "./layout-state";
 
 export {layoutBounds};
-export {LayoutStateReadable, LayoutStateWritable};
+export {LayoutStateReadable, LayoutStateWritable, LayoutStateConditional};
 export default Layout;
