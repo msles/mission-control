@@ -37,6 +37,11 @@ class GameState {
     return this;
   }
 
+  mergeGames(otherGame: GameState): GameState {
+    // just combine the players and observers into a new game
+    return this;
+  }
+
   tick(): GameState {
     // TODO: advance the game by one step
     return this;

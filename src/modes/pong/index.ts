@@ -3,10 +3,18 @@ import WebAPI from "../../web/api";
 import Mode, { Frame, ModeBuilder } from "../mode";
 
 class PongMode implements Mode {
+  
+  // Starts as mapping of GameState -> Display?
+
+  // broadcast: obstacle positions, game over (to specific players)
 
   defineApi(): WebAPI {
     return {
       prefix: 'pong',
+      // * endpoint / channel for users to join a game
+      // * endpoint / channel for admins to start a game
+      // * channel for moving a paddle
+      // * channel for placing an obstacle
       endpoints: [],
       channels: []
     }
