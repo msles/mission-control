@@ -19,7 +19,7 @@ const PaintPixel = z.object({
 
 const PaintCommand = z.array(PaintPixel);
 
-type PaintCommand = z.infer<typeof PaintCommand>;
+export type PaintCommand = z.infer<typeof PaintCommand>;
 
 /**
  * The drawing mode that allows users to paint pixels to invidual displays.
@@ -49,7 +49,7 @@ class DrawMode implements Mode {
     }
   }
 
-  private paint(pixels: PaintCommand) {
+  paint(pixels: PaintCommand) {
     pixels.forEach(pixel => this.canvas.putImageData(
       // rgba = [red, green, blue, alpha]
       new ImageData(Uint8ClampedArray.from([...pixel.color, 255]), 1, 1),
