@@ -49,7 +49,7 @@ class DrawMode implements Mode {
     }
   }
 
-  paint(pixels: PaintCommand) {
+  private paint(pixels: PaintCommand) {
     pixels.forEach(pixel => this.canvas.putImageData(
       // rgba = [red, green, blue, alpha]
       new ImageData(Uint8ClampedArray.from([...pixel.color, 255]), 1, 1),

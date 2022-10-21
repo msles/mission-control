@@ -7,7 +7,8 @@ import { matrix64x64 } from "./examples/display.examples";
 
 test("painting pixels", () => {
   const state = new LayoutState(one64x64);
-  const mode = DrawMode(jest.fn(), state);
+  const broadcast = jest.fn();
+  const mode = DrawMode(broadcast, state);
   const api = mode.defineApi();
   const paintChannel = api.channels.find(ch => ch.name === 'paint');
   const user = new User<unknown>(0, Privileges.Player);
