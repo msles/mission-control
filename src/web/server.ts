@@ -5,7 +5,6 @@ import WebAPI from "./api";
 import Endpoint, { EndpointType } from "./endpoint";
 import { Privileges, User } from "../users";
 import Channel, { ChannelMessage } from "./channel";
-import Mode from "../modes";
 import { ParseResult } from "./parse";
 
 /**
@@ -17,6 +16,7 @@ class Server {
   private readonly app: Express;
   private readonly users: Set<User<WebSocket>>;
   private readonly channels: Map<string, readonly Channel<unknown>[]>;
+  private httpServer?: http.Server;
 
   constructor() {
     this.app = express();
@@ -49,14 +49,27 @@ class Server {
     this.channels.set(prefix, api.channels);
     return this;
   }
+
   /**
    * Start the webserver on the given port.
+   * Resolves when the server starts listening.
    */
-  start(port: number) {
+  start(port: number): Promise<void> {
     const server = http.createServer(this.app);
     const wss = new WebSocketServer({ server });
     wss.on('connection', socket => this.addUser(socket));
-    server.listen(port);
+    this.httpServer = server;
+    return new Promise(resolve => {
+      server.listen(port, resolve);
+    });
+  }
+
+  stop(): Promise<void> {
+    return new Promise(resolve => {
+      this.httpServer ? 
+        this.httpServer?.close(() => resolve()) :
+        resolve();
+    });
   }
 
   /**

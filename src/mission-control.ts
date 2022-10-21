@@ -38,10 +38,10 @@ class MissionControl {
     this.configureWebServer();
   }
 
-  start() {
+  async start() {
     this.currentMode.start(this.layout.get());
-    this.webServer.start(8000);
     this.pixelServer.start();
+    await this.webServer.start(8000);
   }
 
   private configureWebServer(): void {
