@@ -1,3 +1,4 @@
-import Display from "./display";
+import Display, {DisplayType} from "./display";
 
 export default Display;
+export {DisplayType};
