@@ -22,6 +22,8 @@
     - [ ] Sync game state
     - [ ] Move pong paddles
     - [ ] Place obstacles
+  - [ ] User authentication
+    - [ ] log in on start screen as player or admin
 - [ ] Deploy to Google Cloud
   - [ ] Static site for React
   - [ ] Docker container for server
