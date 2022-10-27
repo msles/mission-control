@@ -50,11 +50,10 @@ class DrawMode implements Mode {
   }
 
   private paint(pixels: PaintCommand) {
-    pixels.forEach(pixel => this.canvas.putImageData(
-      // rgba = [red, green, blue, alpha]
-      new ImageData(Uint8ClampedArray.from([...pixel.color, 255]), 1, 1),
-      pixel.coordinates[0], pixel.coordinates[1]
-    ));
+    pixels.forEach(pixel => {
+      this.canvas.fillStyle = `rgb(${pixel.color[0]},${pixel.color[1]},${pixel.color[2]})`;
+      this.canvas.fillRect(pixel.coordinates[0], pixel.coordinates[1], 1, 1);
+    });
   }
 
   start(layout: Layout): void {
