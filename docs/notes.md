@@ -63,3 +63,31 @@ MissionControl {
   connectedDevices
 
 }
+
+# Installing mission-control on a Pi
+
+1. Install nodejs
+```sh
+VERSION=v18.12.0
+DISTRO=linux-arm64 # for armv8
+wget https://nodejs.org/dist/v18.12.0/node-$VERSION-$DISTRO.tar.xz
+sudo mkdir -p /usr/local/lib/nodejs
+sudo tar -xJvf node-$VERSION-$DISTRO.tar.xz -C /usr/local/lib/nodejs 
+```
+2. Add this to the `~/.profile`
+```sh
+# Nodejs
+VERSION=v18.12.0
+DISTRO=linux-arm64
+export PATH=/usr/local/lib/nodejs/node-$VERSION-$DISTRO/bin:$PATH
+```
+3. Clone mission-control repo
+4. Install node-canvas build dependencies
+```sh
+sudo apt-get install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+```
+5. Install npm dependencies
+```sh
+npm i # will fail on canvas
+npm install canvas --build-from-source
+```
