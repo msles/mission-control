@@ -24,7 +24,9 @@
     - [ ] Place obstacles
   - [ ] User authentication
     - [ ] log in on start screen as player or admin
-- [ ] Deploy to Google Cloud
-  - [ ] Static site for React
-  - [ ] Docker container for server
+- [x] Deploy to Google Cloud
+  - [x] Static site for React
+  - [ ] ~~Docker container for server~~
+  - [x] Proxy server
 - [ ] **Sending/Receiving WiFi config over NFC**
+  - [x] Hardware setup
