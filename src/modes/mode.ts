@@ -37,7 +37,7 @@ interface Mode {
  */
 export type Frame = Map<Display,ImageData>;
 
-export type BroadcastFn = (message: unknown) => void
+export type BroadcastFn = (message: unknown, channel: string) => void
 export type ModeBuilder = (
   broadcast: BroadcastFn,
   layoutState: LayoutStateReadable

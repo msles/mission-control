@@ -26,7 +26,11 @@ class Server {
     this.channels = new Map();
   }
 
-  broadcast(message: unknown, onlyUsers?: Set<User>) {
+  /**
+   * Sends a broadcast message to all users, or only the users
+   * specified by `onlyUsers`.
+   */
+  broadcast(message: BroadcastMessage, onlyUsers?: Set<User>) {
     const allUsers = Array.from(this.users);
     const users = onlyUsers ?
       allUsers.filter(user => onlyUsers.has(user)) :
@@ -64,8 +68,13 @@ class Server {
     });
   }
 
+  /**
+   * Stop the webserver and free its resources.
+   * This closes all active WebSocket connections.
+   */
   stop(): Promise<void> {
     return new Promise(resolve => {
+      Array.from(this.users).forEach(user => user.connection.close());
       this.httpServer ? 
         this.httpServer?.close(() => resolve()) :
         resolve();
@@ -79,6 +88,7 @@ class Server {
   private addUser(socket: WebSocket) {
     const user = new User(socket, Privileges.Admin);
     this.users.add(user);
+    socket.send(JSON.stringify({channel: 'info', message: 'welcome'}));
     socket.on('message', message => this.onChannelMessage(message));
     socket.on('close', () => this.users.delete(user));
   }
@@ -170,5 +180,13 @@ class Server {
   }
 
 }
+
+/**
+ * A broadcast message is the same a channel message, but it doesn't necessarily
+ * come from a specific mode.
+ */
+type BroadcastMessage = 
+  Omit<ChannelMessage, 'mode'> & 
+  Partial<Pick<ChannelMessage, 'mode'>>
 
 export default Server;

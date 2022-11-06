@@ -25,7 +25,7 @@ class MissionControl {
     }
     this.layout = new LayoutState([]);
     const modes = modeBuilders.map(
-      ([name, builder]) => [name, this.buildMode(builder)] as const
+      ([name, builder]) => [name, this.buildMode(builder, name)] as const
     );
     this.modes = new Map(modes);
     this.webServer = new WebServer();
@@ -52,6 +52,10 @@ class MissionControl {
       );
     });
     this.webServer.configure('admin', this.adminAPI());
+    this.layout.onLayoutChanged(layout => this.webServer.broadcast({
+      channel: 'layout',
+      message: layout
+    }));
   }
 
   private adminAPI(): WebAPI {
@@ -82,9 +86,9 @@ class MissionControl {
     this.currentMode.start(this.layout.get());
   }
 
-  private buildMode(builder: ModeBuilder): Mode {
+  private buildMode(builder: ModeBuilder, name: string): Mode {
     const mode = builder(
-      message => this.webServer.broadcast(message),
+      (message, channel) => this.broadcastUnderMode(mode, name, message, channel),
       // Only inform a mode of a layout change when it is the active mode.
       new LayoutStateConditional(
         this.layout,
@@ -92,6 +96,16 @@ class MissionControl {
       )
     );
     return mode;
+  }
+
+  /**
+   * Broadcasts a message under the given mode and channel,
+   * so long as that mode is active.
+   */
+  private broadcastUnderMode(mode: Mode, name: string, message: unknown, channel: string): void {
+    if (this.currentMode === mode) {
+      this.webServer.broadcast({mode: name, channel, message});
+    }
   }
 
   /**
