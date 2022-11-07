@@ -23,7 +23,7 @@ type Channel<Params> = WithParseStage<Params> & {
 }
 
 const ChannelMessage = z.object({
-  mode: z.string(),
+  mode: z.optional(z.string()),
   channel: z.string(),
   message: z.unknown()
 });

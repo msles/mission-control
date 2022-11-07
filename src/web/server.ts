@@ -5,7 +5,7 @@ import WebAPI from "./api";
 import Endpoint, { EndpointType } from "./endpoint";
 import { Privileges, User } from "../users";
 import Channel, { ChannelMessage } from "./channel";
-import { ParseResult } from "./parse";
+import { acceptAny, ParseResult } from "./parse";
 
 /**
  * The mission-control web server.
@@ -15,7 +15,8 @@ class Server {
   // The express application that hosts the web app.
   private readonly app: Express;
   private readonly users: Set<User<WebSocket>>;
-  private readonly channels: Map<string, readonly Channel<unknown>[]>;
+  private readonly channels: readonly Channel<unknown>[];
+  private readonly modeChannels: Map<string, readonly Channel<unknown>[]>;
   private httpServer?: http.Server;
 
   constructor() {
@@ -23,14 +24,15 @@ class Server {
     // Parse the request body as JSON
     this.app.use(express.json());
     this.users = new Set();
-    this.channels = new Map();
+    this.channels = [this.pingChannel()]
+    this.modeChannels = new Map();
   }
 
   /**
    * Sends a broadcast message to all users, or only the users
    * specified by `onlyUsers`.
    */
-  broadcast(message: BroadcastMessage, onlyUsers?: Set<User>) {
+  broadcast(message: ChannelMessage, onlyUsers?: Set<User>) {
     const allUsers = Array.from(this.users);
     const users = onlyUsers ?
       allUsers.filter(user => onlyUsers.has(user)) :
@@ -50,7 +52,7 @@ class Server {
       this.createEndpoint(`/api/${prefix}/${endpoint.name}`, endpoint)
     });
     // Set WebSocket channels
-    this.channels.set(prefix, api.channels);
+    this.modeChannels.set(prefix, api.channels);
     return this;
   }
 
@@ -89,14 +91,14 @@ class Server {
     const user = new User(socket, Privileges.Admin);
     this.users.add(user);
     socket.send(JSON.stringify({channel: 'info', message: 'welcome'}));
-    socket.on('message', message => this.onChannelMessage(message));
+    socket.on('message', message => this.onChannelMessage(message, user));
     socket.on('close', () => this.users.delete(user));
   }
 
   /**
    * Parse a WebSocket message and forward it to the corresponding WebSocket channel.
    */
-  private onChannelMessage(buffer: RawData) {
+  private onChannelMessage(buffer: RawData, from: User<WebSocket>) {
     const json = this.parseJSONBuffer(buffer);
     if (!json.success) {
       return;
@@ -104,10 +106,10 @@ class Server {
     const parseResult = ChannelMessage.safeParse(json.data);
     if (parseResult.success) {
       const {mode, channel, message} = parseResult.data;
-      // TODO: check if mode matches the current mode.
+      console.log(parseResult.data);
       this.getChannels(mode)
         .filter(ch => ch.name === channel)
-        .forEach(ch => this.parseAndReceive(message, ch));
+        .forEach(ch => this.parseAndReceive(message, ch, from));
     }
   }
 
@@ -122,10 +124,30 @@ class Server {
   }
 
   /**
-   * Find all WebSocket channels for the given mode.
+   * Find all WebSocket channels for the given mode. If no mode is
+   * specified, use the list of generic channels.
    */
-  private getChannels(mode: string): readonly Channel<unknown>[] {
-    return this.channels.get(mode) ?? [];
+  private getChannels(mode?: string): readonly Channel<unknown>[] {
+    if (mode === undefined) {
+      return this.channels;
+    }
+    return this.modeChannels.get(mode) ?? [];
+  }
+
+  /**
+   * Sends a 'pong' message back to any user that sends a message on
+   * the 'ping' channel.
+   */
+  private pingChannel(): Channel<unknown> {
+    return {
+      name: 'ping',
+      privileges: Privileges.Player,
+      parse: acceptAny(),
+      onReceived: (_, user) => this.broadcast(
+        {channel: 'ping', message: 'pong'},
+        new Set([user])
+      )
+    }
   }
 
   /**
@@ -171,22 +193,13 @@ class Server {
    * Attends to parse a given query, then passing the result to the given channel.
    * If parsing fails, the message is ignored.
    */
-  private parseAndReceive<Params>(query: unknown, channel: Channel<Params>) {
+  private parseAndReceive<Params>(query: unknown, channel: Channel<Params>, from: User<WebSocket>) {
     const parseResult = channel.parse(query);
     if (parseResult.success) {
-      // TODO: actually determine user
-      channel.onReceived(parseResult.data, new User(0, Privileges.Player));
+      channel.onReceived(parseResult.data, from);
     }
   }
 
 }
-
-/**
- * A broadcast message is the same a channel message, but it doesn't necessarily
- * come from a specific mode.
- */
-type BroadcastMessage = 
-  Omit<ChannelMessage, 'mode'> & 
-  Partial<Pick<ChannelMessage, 'mode'>>
 
 export default Server;

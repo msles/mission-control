@@ -27,6 +27,13 @@ export function createZodParser<T>(schema: Schema<T>): Parser<T> {
 }
 
 /**
+ * A parser that allows any input, and does no parsing.
+ */
+export function acceptAny(): Parser<undefined> {
+  return () => ({success: true, data: undefined});
+}
+
+/**
  * A builder class that allows you to chain parsers together.
  */
 export class ParseBuilder<T> {
