@@ -5,7 +5,7 @@ import WebAPI from "../../web/api";
 import { Privileges } from "../../users";
 import Layout, {layoutBounds, LayoutStateReadable} from "../../layout";
 import { z } from "zod";
-import { createZodParser } from "../../web/parse";
+import { acceptAny, createZodParser } from "../../web/parse";
 import Endpoint, { EndpointType } from "../../web/endpoint";
 import { Subject, map, buffer, throttleTime } from "rxjs";
 
@@ -58,7 +58,7 @@ class DrawMode implements Mode {
       name: 'get',
       type: EndpointType.FETCH,
       privileges: Privileges.Player,
-      parse: () => ({success: true, data: undefined}),
+      parse: acceptAny(),
       run: () => Promise.resolve(this.getImageData())
     }
     return {
