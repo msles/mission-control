@@ -1,6 +1,6 @@
 import Display from "../display";
 import { DisplayType } from "../display/display";
-import Layout, { Position } from "./layout";
+import Layout, { layoutBounds, Position } from "./layout";
 
 /**
  * A mutable layout state where displays can be added, removed, and moved.
@@ -11,6 +11,8 @@ export interface LayoutStateWritable extends LayoutStateReadable {
    * Add a display to the layout at the given position.
    */
   addDisplay(display: Display, position: Position): void;
+
+  addDisplayRight(display: Display): void;
 
   /**
    * Remove the given display from the layout.
@@ -33,6 +35,8 @@ export interface LayoutStateReadable {
    * Subscribe the given handler to any future layout changes.
    */
   onLayoutChanged(handler: LayoutChangeHandler): LayoutChangeUnsubscribe;
+
+  has(display: Display): boolean;
 
   get(): Layout;
 
@@ -58,6 +62,12 @@ class LayoutState implements LayoutStateWritable {
       this.updateLayout([...this.layout, {display, position}]);
   }
 
+  addDisplayRight(display: Display<DisplayType>): void {
+    const [width] = layoutBounds(this.layout);
+    const position: Position = [width, 0];
+    this.addDisplay(display, position);
+  }
+
   removeDisplay(displayToRemove: Display<DisplayType>): void {
       this.updateLayout(this.layout.filter(({display}) => display !== displayToRemove));
   }
@@ -80,6 +90,10 @@ class LayoutState implements LayoutStateWritable {
 
   get(): Layout {
     return this.layout;
+  }
+
+  has(display: Display): boolean {
+    return new Set(this.layout.map(({display}) => display)).has(display);
   }
 
 }
@@ -108,6 +122,10 @@ export class LayoutStateConditional implements LayoutStateReadable {
 
   get() {
     return this.source.get();
+  }
+
+  has(display: Display): boolean {
+    return this.source.has(display);
   }
 
 }

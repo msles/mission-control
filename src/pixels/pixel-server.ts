@@ -1,34 +1,53 @@
 import { Service as PixelPusher, Device as PixelDevice } from "node-pixel-pusher";
 import Display, { DisplayType } from "../display/display";
 import { LayoutStateWritable } from "../layout";
-import { layoutBounds, Position } from "../layout/layout";
 import { Frame } from "../modes/mode";
 
 class PixelServer {
 
   private readonly layoutState: LayoutStateWritable;
+  private readonly displays: Map<string, readonly [PixelDevice, Display]>;
   private readonly render: RenderFn;
 
   constructor(layoutState: LayoutStateWritable, render: RenderFn) {
     this.layoutState = layoutState;
+    this.displays = new Map();
     this.render = render;
   }
 
   start() {
     const pusher = new PixelPusher();
     pusher.on('discover', device => {
-      const display: Display = {
-        type: DisplayType.Matrix,
-        resolution: [
-          device.deviceData.pixelsPerStrip,
-          device.deviceData.numberStrips
-        ]
-      };
-      const [width] = layoutBounds(this.layoutState.get());
-      const position: Position = [width, 0];
-      this.layoutState.addDisplay(display, position);
-      device.startRendering(() => this.renderTo(device, display));
+      const {macAddress} = device.deviceData;
+      const existing = this.displays.get(macAddress);
+      if (existing) {
+        this.updateDevice(existing, device);
+      }
+      else {
+        this.addDevice(device);
+      }
     });
+  }
+
+  private addDevice(device: PixelDevice) {
+    const {macAddress, pixelsPerStrip, numberStrips} = device.deviceData;
+    const display: Display<DisplayType.Matrix> = {
+      type: DisplayType.Matrix,
+      resolution: [pixelsPerStrip, numberStrips]
+    }
+    this.displays.set(macAddress, [device, display]);
+    this.layoutState.addDisplayRight(display);
+    device.startRendering(() => this.renderTo(device, display));
+  }
+
+  private updateDevice(existing: readonly [PixelDevice, Display], newDevice: PixelDevice) {
+    const [oldDevice, display] = existing;
+    oldDevice.stopRendering();
+    this.displays.set(newDevice.deviceData.macAddress, [newDevice, display]);
+    if (!this.layoutState.has(display)) {
+      this.layoutState.addDisplayRight(display);
+    }
+    newDevice.startRendering(() => this.renderTo(newDevice, display));
   }
 
   private renderTo(device: PixelDevice, display: Display) {
