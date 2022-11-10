@@ -1,223 +1,205 @@
-import { ImageData, createCanvas, CanvasRenderingContext2D as Context2D } from "canvas";
-import Display from "../../display";
-import Mode, { BroadcastFn, ModeBuilder } from "../mode";
+import { createCanvas, CanvasRenderingContext2D as Context2D } from "canvas";
+import Mode, { Frame, ModeBuilder } from "../mode";
 import WebAPI from "../../web/api";
-import { Privileges } from "../../users";
-import Layout, {layoutBounds, LayoutStateReadable} from "../../layout";
+import { Privileges, User } from "../../users";
+import Layout, {layoutBounds, LayoutStateReadable, normalizeLayout} from "../../layout";
 import { z } from "zod";
-import { createZodParser } from "../../web/parse";
+import { acceptAny, createZodParser } from "../../web/parse";
+import GameState from "./game-state";
+import Channel from "../../web/channel";
 
-// A Zod Schema for a natural number
-const Natural = z.number().int().gte(0);
-// A Zod Schema for a positive 8-bit integer (0-255).
-const PosInt8 = Natural.lt(256);
+const PaddleMoveCommand = z.number().int().gte(0);
+type PaddleMoveCommand = z.infer<typeof PaddleMoveCommand>;
 
-//We could have an array similar to this for the ball and the paddles (separate for each player or no?)
-const PaintPixel = z.object({
-  coordinates: z.tuple([Natural, Natural]),
-  color: z.tuple([PosInt8, PosInt8, PosInt8])
-});
+const JoinGameCommand = z.union([z.literal("player"), z.literal("observer")]);
+type JoinGameCommand = z.infer<typeof JoinGameCommand>;
 
-const ObstacleCommand = z.array(PaintPixel);
-const PaddleCommand = z.array(PaintPixel);
-
-export type ObstacleCommand = z.infer<typeof ObstacleCommand>;
-export type PaddleCommand = z.infer<typeof PaddleCommand>;
-
-//TO DO: How do the w, h, x, y connect to the PaintPixel commands?
-class PongComponent{
-  width:number; //dimensions
-  height:number;
-  x:number; //positions on the plane
-  y:number;
-  ballVel:number = 0;
-  yVel:number = 0;
-  constructor(w:number,h:number,x:number,y:number){       
-      this.width = w;
-      this.height = h;
-      this.x = x;
-      this.y = y;
-  }
-  //call draw mode for this maybe? not sure how we want the two modes to interact, this might be fine bc the system does it not the user
-  draw(context){
-      context.fillStyle = "#fff";
-      context.fillRect(this.x,this.y,this.width,this.height);
-  }
-}
-
-//Class for user paddle controlled by Admin
-class Paddle extends PongComponent{
-    
-  private speed:number = 10;
-  
-  constructor(w:number,h:number,x:number,y:number){
-      super(w,h,x,y);
-  }
-  
-  update(canvas){
-    //Determined by input through channel on Web app
-    //Any "Game" inputs need to be dealt with via channel requests from the Admin Paddle users
-   if( Game.keysPressed[KeyBindings.UP] ){
-      this.yVel = -1;
-      if(this.y <= 20){
-          this.yVel = 0
-      }
-   }else if(Game.keysPressed[KeyBindings.DOWN]){
-       this.yVel = 1;
-       if(this.y + this.height >= canvas.height - 20){
-           this.yVel = 0;
-       }
-   }else{
-       this.yVel = 0;
-   }
-   
-   this.y += this.yVel * this.speed;
-   
-  }
-}
-
-//Ball class, direction influenced by the paddle inputs from the user
-class Ball extends PongComponent{
-    
-  private speed:number = 5;
-  
-  constructor(w:number,h:number,x:number,y:number){
-      super(w,h,x,y);
-      var randomDirection = Math.floor(Math.random() * 2) + 1; 
-      if(randomDirection % 2){
-          this.ballVel = 1;
-      }else{
-          this.ballVel = -1;
-      }
-      this.yVel = 1;
-  }
-  
-  //TO DO: change computer values to player2 values
-  update(player:Paddle,player2:Paddle,canvas){
-     
-      //check top canvas bounds
-      if(this.y <= 10){
-          this.yVel = 1;
-      }
-      
-      //check bottom canvas bounds
-      if(this.y + this.height >= canvas.height - 10){
-          this.yVel = -1;
-      }
-      
-      //check left canvas bounds
-      if(this.x <= 0){  
-          this.x = canvas.width / 2 - this.width / 2;
-          Game.computerScore += 1;
-      }
-      
-      //check right canvas bounds
-      if(this.x + this.width >= canvas.width){
-          this.x = canvas.width / 2 - this.width / 2;
-          Game.playerScore += 1;
-      }
-      
-      
-      //check player collision
-      if(this.x <= player.x + player.width){
-          if(this.y >= player.y && this.y + this.height <= player.y + player.height){
-              this.ballVel = 1;
-          }
-      }
-      
-      //check computer collision
-      if(this.x + this.width >= player2.x){
-          if(this.y >= player2.y && this.y + this.height <= player2.y + player2.height){
-              this.ballVel = -1;
-          }
-      }
-     
-      this.x += this.ballVel * this.speed;
-      this.y += this.ballVel * this.speed;
-  }
-}
-
-//TO DO: Update all collision code to include cases where it hits an obstacle
-//Class for obstacles to be placed by user
 class PongMode implements Mode {
-  
 
-  private readonly broadcast: BroadcastFn;
-  private canvas: Context2D;
-  // Starts as mapping of GameState -> Display?
+  private readonly layout: LayoutStateReadable;
+  private readonly games: Map<User, GameRunner>;
+  private readonly players: Set<User>;
+  private readonly observers: Set<User>;
+  private readonly runners: Set<GameRunner>;
 
-  // broadcast: obstacle positions, game over (to specific players)
+  constructor(layout: LayoutStateReadable) {
+    this.layout = layout;
+    this.games = new Map();
+    this.players = new Set();
+    this.observers = new Set();
+    this.runners = new Set();
+  }
+
+  start() {
+    // Nothing to do
+  }
+
+  stop() {
+    // Stop all active games and clear out users.
+    this.runners.forEach(runner => runner.stop());
+    this.runners.clear();
+    this.games.clear();
+    this.players.clear();
+    this.observers.clear();
+  }
+
+  private startGame(): void {
+    if (this.players.size >= 2) {
+      // just create one game for now
+      const [p1, p2] = Array.from(this.players);
+      // for now, just take the first display
+      const runner = new GameRunner([p1, p2], this.observers, this.layout.get().slice(0, 1));
+      this.players.forEach(player => this.games.set(player, runner));
+      this.observers.forEach(observer => this.games.set(observer, runner));
+      this.runners.add(runner);
+      runner.start();
+    }
+    else {
+      console.warn("Too few players to start a game.");
+    }
+  }
+
+  private stopGame(game: GameRunner): void {
+    game.stop();
+    this.runners.delete(game);
+    const players = Array.from(this.games.entries()).filter(([player, g]) => g === game);
+    for (const [player] of players) {
+      this.games.delete(player);
+    }
+  }
 
   defineApi(): WebAPI {
-    //Channel for pong paddles to join
-    //Do we need two separate channels for each player?
-    const paddleChannel = {
-        name: 'pong paddle',
-        privileges: Privileges.Admin, //Admin for now right?
-
-    }
-    //Channel for spectators to join
-    const spectatorChannel = {
-      name: 'spectator',
-      privileges: Privileges.Player,
-    }
-
-    const movePaddle = {
-      name: 'move paddle',
-      privileges: Privileges.Admin,
-      parse: createZodParser(PaddleCommand),
-      onReceived: (pixels: PaddleCommand) => this.PaddleMovement(pixels) 
-    }
-    const placeObstacle = {
-      name: 'place obstacle',
-      privileges: Privileges.Player,
-      parse: createZodParser(ObstacleCommand),
-      onReceived: (pixels: ObstacleCommand) => this.ObstaclePlace(pixels)
-    }
     return {
-      // * endpoint / channel for users to join a game
-      // * endpoint / channel for admins to start a game
-      // * channel for moving a paddle
-      // * channel for placing an obstacle
-      endpoints: [],
-      channels: [movePaddle, placeObstacle]
+      channels: [
+        this.joinGameChannel(),
+        this.startGameChannel(),
+        this.stopGameChannel(),
+        this.paddleChannel()
+      ],
+      endpoints: []
     }
   }
 
-  //This might be where we add all of the pong code I just wasn't sure whether it should be in the mode or out of the mode
-  //Code for user moving the paddle on the display
-  private PaddleMovement(pixels: PaddleCommand) : void
-  {
-
-  }
-  
-  //Code for user placing an obstacle on the display
-  private ObstaclePlace(pixels: ObstacleCommand) : void{
-
-  }
-
-  start(layout: Layout): void {
-    // Initalize the game state(s)
-    // This creates the bounds of the board. Should we use draw mode to set the visual board up?
-    const [width, height] = layoutBounds(layout);
-    this.canvas = createCanvas(
-      Math.max(width, 1),
-      Math.max(height, 1)
-    ).getContext('2d');
-    //Under here we could implement the drawBoardDetails part of the original pong code
+  private joinGameChannel(): Channel<JoinGameCommand> {
+    return {
+      name: 'join',
+      privileges: Privileges.Player,
+      parse: createZodParser(JoinGameCommand),
+      onReceived: (type, user) => {
+        if (type === 'player' && !this.observers.has(user)) {
+          this.players.add(user);
+        }
+        else if (type === 'observer' && !this.players.has(user)) {
+          this.observers.add(user);
+        }
+      }
+    }
   }
 
-  stop(): void {
-    // Free any resources
+  private startGameChannel(): Channel<undefined> {
+    return {
+      name: 'start',
+      privileges: Privileges.Player,
+      parse: acceptAny(),
+      onReceived: () => this.startGame()
+    }
   }
 
-  render(layout: Layout): Frame {
-    // Something like: new PongRenderer(this.gameState).render()
-    throw new Error("Method not implemented.");
+  private stopGameChannel(): Channel<undefined> {
+    return {
+      name: 'stop',
+      privileges: Privileges.Player,
+      parse: acceptAny(),
+      onReceived: (_, user) => {
+        const game = this.games.get(user);
+        if (game) {
+          this.stopGame(game);
+        }
+      }
+    }
+  }
+
+  private paddleChannel(): Channel<PaddleMoveCommand> {
+    return {
+      name: 'paddle',
+      privileges: Privileges.Player,
+      parse: createZodParser(PaddleMoveCommand),
+      onReceived: (y, user) => {
+        this.games.get(user)?.movePaddle(user, y);
+      }
+    }
+  }
+
+  render(_layout: Layout): Frame {
+    const frame: Frame = new Map();
+    this.runners.forEach(runner => {
+      for (const [display, image] of runner.render().entries()) {
+        frame.set(display, image);
+      }
+    });
+    return frame;
   }
 
   static builder(): ModeBuilder {
-    return () => new PongMode();
+    return (broadcast, layoutState) => new PongMode(layoutState);
+  }
+
+}
+
+class GameRunner {
+
+  private readonly game: GameState;
+  private readonly size: readonly [number, number];
+  private readonly layout: Layout;
+  private readonly canvas: Context2D;
+  private stopRunning: () => void;
+
+  constructor(players: readonly [User, User], observers: Set<User>, layout: Layout) {
+    this.layout = normalizeLayout(layout);
+    this.size = layoutBounds(this.layout);
+    this.game = new GameState(players, observers, this.size);
+    this.canvas = createCanvas(this.size[0], this.size[1]).getContext('2d');
+    this.stopRunning = () => {};
+  }
+
+  /**
+   * Start the game loop. This method restarts the game loop
+   * if it was already started.
+   */
+  start() {
+    this.stopRunning();
+    const interval = setInterval(() => this.game.tick(33), 33);
+    this.stopRunning = () => clearInterval(interval);
+  }
+
+  /**
+   * Stop the game loop.
+   */
+  stop() {
+    this.stopRunning();
+  }
+
+  /**
+   * Move the player's paddle if it within the bounds of the board size.
+   */
+  movePaddle(player: User, y: number) {
+    if (y < this.size[1]) {
+      this.game.movePaddle(player, y);
+    }
+  }
+
+  /**
+   * Render the game using the layout this runner was created with.
+   */
+  render(): Frame {
+    this.game.render(this.canvas);
+    const frame: Frame = new Map();
+    for (const {display, position} of this.layout) {
+      frame.set(display, this.canvas.getImageData(
+        position[0], position[1], display.resolution[0], display.resolution[1]
+      ));
+    }
+    return frame;
   }
 
 }

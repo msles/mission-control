@@ -47,7 +47,7 @@ class MissionControl {
   private configureWebServer(): void {
     Array.from(this.modes.entries()).forEach(([name, mode]) => {
       this.webServer.configure(
-        `mode/${name}`,
+        name,
         this.wrapAPI(mode, mode.defineApi())
       );
     });
