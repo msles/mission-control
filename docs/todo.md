@@ -1,8 +1,9 @@
 # TODO
 
 - [ ] **Formally Define APIs**
-  - [ ] Device -> Server connection
-    - [ ] Persistent connection (disconnect behavior)
+  - [x] Device -> Server connection
+    - [x] Persistent connection (disconnect behavior)
+    > This was not implemented with a persistent connection, but devices are remembered between shutdown/reconnection.
   - [x] Player <-> Server communication
     - [ ] Send users layout
   - [x] Display Layout
