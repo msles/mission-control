@@ -1,5 +1,31 @@
 # TODO
 
+Remaining items:
+
+### Server
+- [ ] broadcast layout changes to client
+- [ ] send all current draw pixels to client
+- [ ] broadcast mode switch to clients
+
+### Web Client
+- [ ] send layout change to server
+- [ ] implement draw component
+- [ ] switch page when mode switches
+- [ ] automatic anonymous sign in
+- [ ] QR code (join) for players vs observers
+- [ ] pong - bracketing games
+
+### Raspberry Pis
+- [ ] Set up the remaining two pis/displays
+- [ ] send WiFi config over NFC
+- [ ] Make everying run on startup
+
+### Networking
+- [ ] Get a router
+- [ ] Stress test all 4 displays with many clients
+
+### Battery
+
 - [ ] **Formally Define APIs**
   - [x] Device -> Server connection
     - [x] Persistent connection (disconnect behavior)
