@@ -22,6 +22,7 @@ class MissionControl {
       throw new Error("At least one mode is required.");
     }
     this.layout = new LayoutState([
+      // mock a default layout with two displays
       {display: {type: DisplayType.Matrix, resolution: [64, 64]}, position: [0, 0]},
       {display: {type: DisplayType.Matrix, resolution: [64, 64]}, position: [0, 0]}
     ]);
