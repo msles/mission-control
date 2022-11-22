@@ -54,7 +54,7 @@ function squaredDist(posA: Position, posB: Position): number {
  * Represents a Display in 2D space.
  * The origin is in the top-left.
  */
-type DisplayPosition = {
+export type DisplayPosition = {
   display: Display,
   position: Position
 };

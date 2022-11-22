@@ -52,8 +52,8 @@ class GameState {
     const width = this.size[0] / 32;
     const height = this.size[1] / 4;
     return new Map([
-      [players[0], new Paddle([5, y], [width, height], false)],
-      [players[1], new Paddle([this.size[0] - 5, y], [width, height], true)]
+      [players[0], new Paddle([width/2, y], [width, height], false)],
+      [players[1], new Paddle([this.size[0] - width/2, y], [width, height], true)]
     ]);
   }
 
@@ -189,22 +189,22 @@ class Ball extends Entity2D {
 
   constructor(position: Vec, radius: number) {
     super(position);
-    this.velocity = [-0.05, -0.005]; //-0.05, 0 to start
+    this.velocity = [-0.05, -0.025]; //-0.05, 0 to start
     this.radius = radius;
   }
 
   render(ctx: Context2D): void {
     ctx.fillStyle = 'white';
+    /*
     ctx.beginPath();
     ctx.arc(this.position[0], this.position[1], this.radius, 0, Math.PI * 2);
-    ctx.fill();
-    /*
+    ctx.fill();*/
     ctx.fillRect(
       this.position[0] - this.radius / 2,
       this.position[1] - this.radius / 2,
       this.radius * 2,
       this.radius * 2
-    )*/
+    )
   }
 
   tick(delta: number): Entity {

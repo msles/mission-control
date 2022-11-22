@@ -15,8 +15,9 @@ class Server {
   // The express application that hosts the web app.
   private readonly app: Express;
   private readonly users: Set<User<WebSocket>>;
-  private readonly channels: readonly Channel<unknown>[];
+  private readonly channels: Channel<unknown>[];
   private readonly modeChannels: Map<string, readonly Channel<unknown>[]>;
+  private readonly userListeners: Set<UserListener>;
   private httpServer?: http.Server;
 
   constructor() {
@@ -26,6 +27,7 @@ class Server {
     this.users = new Set();
     this.channels = [this.pingChannel()]
     this.modeChannels = new Map();
+    this.userListeners = new Set();
   }
 
   /**
@@ -46,13 +48,18 @@ class Server {
    * Add the HTTP endpoints and WebSocket channels defined
    * by the given WebAPI.
    */
-  configure(prefix: string, api: WebAPI): this {
+  configure(mode: string, api: WebAPI): this {
     // Configure HTTP endpoints
     api.endpoints.forEach(endpoint => {
-      this.createEndpoint(`/api/${prefix}/${endpoint.name}`, endpoint)
+      this.createEndpoint(`/api/${mode}/${endpoint.name}`, endpoint)
     });
     // Set WebSocket channels
-    this.modeChannels.set(prefix, api.channels);
+    this.modeChannels.set(mode, api.channels);
+    return this;
+  }
+
+  addChannel<T>(channel: Channel<T>): this {
+    this.channels.push(channel as Channel<unknown>);
     return this;
   }
 
@@ -83,6 +90,11 @@ class Server {
     });
   }
 
+  onUserJoined(listener: UserListener): () => void {
+    this.userListeners.add(listener);
+    return () => this.userListeners.delete(listener);
+  }
+
   /**
    * Create (or re-identify) a user from a new websocket connection.
    * Process messages from the user by sending them to the corresponding channel.
@@ -90,9 +102,9 @@ class Server {
   private addUser(socket: WebSocket) {
     const user = new User(socket, Privileges.Admin);
     this.users.add(user);
-    socket.send(JSON.stringify({channel: 'info', message: 'welcome'}));
     socket.on('message', message => this.onChannelMessage(message, user));
     socket.on('close', () => this.users.delete(user));
+    this.userListeners.forEach(listener => listener(user));
   }
 
   /**
@@ -110,6 +122,9 @@ class Server {
       this.getChannels(mode)
         .filter(ch => ch.name === channel)
         .forEach(ch => this.parseAndReceive(message, ch, from));
+    }
+    else {
+      console.warn('Parsing failed on', json.data, parseResult.error);
     }
   }
 
@@ -201,5 +216,7 @@ class Server {
   }
 
 }
+
+type UserListener = (user: User) => void;
 
 export default Server;

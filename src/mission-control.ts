@@ -1,5 +1,5 @@
 import LayoutState, { LayoutStateConditional } from "./layout/layout-state";
-import Mode, { ModeBuilder } from "./modes";
+import Mode, { ModeAPI, ModeBuilder } from "./modes";
 import { PixelServer } from "./pixels";
 import WebAPI from "./web/api";
 import Endpoint, { EndpointType } from "./web/endpoint";
@@ -7,6 +7,8 @@ import {z} from "zod";
 import { createZodParser, ParseBuilder, WithParseStage } from "./web/parse";
 import WebServer from "./web/server";
 import { Privileges } from "./users";
+import { LayoutAPI } from "./layout";
+import { DisplayType } from "./display";
 
 // The schema for requesting a mode switch
 const ModeSwitchCommand = z.object({name: z.string()});
@@ -16,6 +18,8 @@ class MissionControl {
   private readonly webServer: WebServer;
   private readonly pixelServer: PixelServer;
   private readonly modes: Map<string, Mode>;
+  private readonly layoutAPI: LayoutAPI;
+  private readonly modeAPI: ModeAPI;
   private currentMode: Mode;
   private layout: LayoutState;
 
@@ -23,18 +27,24 @@ class MissionControl {
     if (modeBuilders.length === 0) {
       throw new Error("At least one mode is required.");
     }
-    this.layout = new LayoutState([]);
+    this.layout = new LayoutState([
+      {display: {type: DisplayType.Matrix, resolution: [64, 64]}, position: [0, 0]},
+      {display: {type: DisplayType.Matrix, resolution: [64, 64]}, position: [0, 0]}
+    ]);
     const modes = modeBuilders.map(
       ([name, builder]) => [name, this.buildMode(builder, name)] as const
     );
     this.modes = new Map(modes);
     this.webServer = new WebServer();
-    [, this.currentMode] = modes[0];
+    const [name, mode] = modes[0];
+    this.currentMode = mode;
     this.pixelServer = new PixelServer(
       this.layout,
       // Inefficient method of rendering... re-renders for each display
       () => this.currentMode.render(this.layout.get())
     );
+    this.layoutAPI = new LayoutAPI(this.layout, this.webServer);
+    this.modeAPI = new ModeAPI(this.webServer, name);
     this.configureWebServer();
   }
 
@@ -52,14 +62,11 @@ class MissionControl {
       );
     });
     this.webServer.configure('admin', this.adminAPI());
-    this.layout.onLayoutChanged(layout => this.webServer.broadcast({
-      channel: 'layout',
-      message: layout
-    }));
   }
 
+
   private adminAPI(): WebAPI {
-    const switchMode: Endpoint<Mode, void> = {
+    const switchMode: Endpoint<readonly [Mode, string], void> = {
       type: EndpointType.COMMAND,
       name: 'switch-mode',
       privileges: Privileges.Admin,
@@ -67,12 +74,15 @@ class MissionControl {
         .chain(({name}) => {
           const mode = this.modes.get(name);
           return mode ?
-            {success: true, data: mode} :
+            {success: true, data: [mode, name] as const} :
             {success: false, error: `mode "${name}" is not supported`};
         })
         .build(),
       // eslint-disable-next-line @typescript-eslint/require-await
-      run: async mode => this.switchMode(mode)
+      run: async ([mode, name]) => {
+        this.switchMode(mode);
+        this.modeAPI.onModeChange(name);
+      }
     }
     return {
       endpoints: [switchMode as Endpoint<unknown, unknown>],

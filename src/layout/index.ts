@@ -8,4 +8,5 @@ export {
   LayoutStateWritable,
   LayoutStateConditional
 };
+export {LayoutAPI} from "./layout-api";
 export default Layout;
