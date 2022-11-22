@@ -2,16 +2,10 @@ import LayoutState, { LayoutStateConditional } from "./layout/layout-state";
 import Mode, { ModeAPI, ModeBuilder } from "./modes";
 import { PixelServer } from "./pixels";
 import WebAPI from "./web/api";
-import Endpoint, { EndpointType } from "./web/endpoint";
-import {z} from "zod";
-import { createZodParser, ParseBuilder, WithParseStage } from "./web/parse";
+import { WithParseStage } from "./web/parse";
 import WebServer from "./web/server";
-import { Privileges } from "./users";
 import { LayoutAPI } from "./layout";
 import { DisplayType } from "./display";
-
-// The schema for requesting a mode switch
-const ModeSwitchCommand = z.object({name: z.string()});
 
 class MissionControl {
 
@@ -44,7 +38,7 @@ class MissionControl {
       () => this.currentMode.render(this.layout.get())
     );
     this.layoutAPI = new LayoutAPI(this.layout, this.webServer);
-    this.modeAPI = new ModeAPI(this.webServer, name);
+    this.modeAPI = new ModeAPI(this.webServer, name, this.modes, mode => this.switchMode(mode));
     this.configureWebServer();
   }
 
@@ -61,33 +55,6 @@ class MissionControl {
         this.wrapAPI(mode, mode.defineApi())
       );
     });
-    this.webServer.configure('admin', this.adminAPI());
-  }
-
-
-  private adminAPI(): WebAPI {
-    const switchMode: Endpoint<readonly [Mode, string], void> = {
-      type: EndpointType.COMMAND,
-      name: 'switch-mode',
-      privileges: Privileges.Admin,
-      parse: new ParseBuilder(createZodParser(ModeSwitchCommand))
-        .chain(({name}) => {
-          const mode = this.modes.get(name);
-          return mode ?
-            {success: true, data: [mode, name] as const} :
-            {success: false, error: `mode "${name}" is not supported`};
-        })
-        .build(),
-      // eslint-disable-next-line @typescript-eslint/require-await
-      run: async ([mode, name]) => {
-        this.switchMode(mode);
-        this.modeAPI.onModeChange(name);
-      }
-    }
-    return {
-      endpoints: [switchMode as Endpoint<unknown, unknown>],
-      channels: []
-    }
   }
 
   private switchMode(nextMode: Mode) {
