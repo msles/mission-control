@@ -22,32 +22,15 @@ export function layoutBounds(layout: Layout): readonly [number, number] {
 }
 
 export function normalizeLayout(layout: Layout): Layout {
-  const closest = closestToOrigin(layout);
-  if (!closest) {
+  if (layout.length === 0) {
     return layout;
   }
-  const [x, y] = closest;
-  return layout.map(({display, position}) => ({display, position: [position[0] - x, position[1] - y]}));
-}
-
-function closestToOrigin(layout: Layout): Position | undefined {
-  if (layout.length === 0) {
-    return undefined;
-  }
-  let closestPos = layout[0].position;
-  let closestDist = squaredDist(layout[0].position, [0, 0]);
-  for (const {position} of layout.slice(1)) {
-    const dist = squaredDist(position, [0, 0]);
-    if (dist < closestDist) {
-      closestPos = position;
-      closestDist = dist;
-    }
-  }
-  return closestPos;
-}
-
-function squaredDist(posA: Position, posB: Position): number {
-  return Math.pow(posA[0] - posB[0], 2) + Math.pow(posA[1] - posB[1], 2);
+  const leftmost = Math.min(...layout.map(({position}) => position[0]));
+  const topmost = Math.min(...layout.map(({position}) => position[1]));
+  return layout.map(({display, position}) => ({
+    display,
+    position: [position[0] - leftmost, position[1] - topmost]
+  }));
 }
 
 /**

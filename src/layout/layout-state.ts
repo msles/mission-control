@@ -1,6 +1,6 @@
 import Display from "../display";
 import { DisplayType } from "../display/display";
-import Layout, { layoutBounds, Position } from "./layout";
+import Layout, { layoutBounds, normalizeLayout, Position } from "./layout";
 
 /**
  * A mutable layout state where displays can be added, removed, and moved.
@@ -78,7 +78,7 @@ class LayoutState implements LayoutStateWritable {
   }
 
   private updateLayout(newLayout: Layout) {
-    this.layout = newLayout;
+    this.layout = normalizeLayout(newLayout);
     Array.from(this.handlers)
       .forEach(handler => handler(this.layout));
   }
