@@ -2,12 +2,13 @@ import { ImageData, createCanvas, CanvasRenderingContext2D as Context2D } from "
 import Display from "../../display";
 import Mode, { BroadcastFn, ModeBuilder } from "../mode";
 import WebAPI from "../../web/api";
-import { Privileges } from "../../users";
+import { Privileges, User } from "../../users";
 import Layout, {layoutBounds, LayoutStateReadable} from "../../layout";
 import { z } from "zod";
 import { acceptAny, createZodParser } from "../../web/parse";
-import Endpoint, { EndpointType } from "../../web/endpoint";
 import { Subject, map, buffer, throttleTime } from "rxjs";
+import Channel from "../../web/channel";
+import { DisplayPosition, Position } from "../../layout/layout";
 
 // A Zod Schema for a natural number
 const Natural = z.number().int().gte(0);
@@ -54,16 +55,15 @@ class DrawMode implements Mode {
       parse: createZodParser(PaintCommand),
       onReceived: (pixels: PaintCommand) => this.paint(pixels)
     }
-    const getPixels: Endpoint<unknown,ImageData> = {
-      name: 'get',
-      type: EndpointType.FETCH,
+    const syncChannel: Channel<void> = {
+      name: 'sync',
       privileges: Privileges.Player,
       parse: acceptAny(),
-      run: () => Promise.resolve(this.getImageData())
+      onReceived: (_, user) => this.sync(user)
     }
     return {
-      endpoints: [getPixels],
-      channels: [paintChannel]
+      endpoints: [],
+      channels: [paintChannel, syncChannel]
     }
   }
 
@@ -98,18 +98,27 @@ class DrawMode implements Mode {
     return new Map(
       layout.map(({display, position}) => [
         display,
-        this.canvas.getImageData(
-          position[0], position[1],
-          display.resolution[0], display.resolution[1]
-        )
+        this.getDisplayData(display, position)
       ])
     );
   }
 
-  private getImageData(): ImageData {
-    const [width, height] = layoutBounds(this.layoutState.get());
+  private sync(user: User): void {
+    this.broadcast(this.serializeCanvas(), 'canvas', new Set([user]));
+  }
+
+  private serializeCanvas(): SerializedCanvas {
+    return this.layoutState.get().map(({display, position}) => ({
+      display,
+      position,
+      pixels: this.getDisplayData(display, position).data
+    }));
+  }
+
+  private getDisplayData(display: Display, position: Position): ImageData {
     return this.canvas.getImageData(
-      0, 0, Math.max(width, 1), Math.max(height, 1)
+      position[0], position[1],
+      display.resolution[0], display.resolution[1]
     );
   }
 
@@ -118,5 +127,8 @@ class DrawMode implements Mode {
   }
 
 }
+
+type SerializedCanvas = DisplayPixels[];
+type DisplayPixels = DisplayPosition & {pixels: Uint8ClampedArray};
 
 export default DrawMode.builder();
