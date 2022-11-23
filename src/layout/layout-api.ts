@@ -80,7 +80,7 @@ export class LayoutAPI {
 
   private createId(): string {
     // does not need to be cryptographically random
-    return Math.random().toString(36);
+    return Math.random().toString(36).slice(3);
   }
 
   private toLayoutWithIds(layout: Layout) {
