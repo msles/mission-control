@@ -6,6 +6,7 @@ import { WithParseStage } from "./web/parse";
 import WebServer from "./web/server";
 import { LayoutAPI } from "./layout";
 import { DisplayType } from "./display";
+import { User } from "./users";
 
 class MissionControl {
 
@@ -66,7 +67,7 @@ class MissionControl {
 
   private buildMode(builder: ModeBuilder, name: string): Mode {
     const mode = builder(
-      (message, channel) => this.broadcastUnderMode(mode, name, message, channel),
+      (message, channel, users) => this.broadcastUnderMode(mode, name, message, channel, users),
       // Only inform a mode of a layout change when it is the active mode.
       new LayoutStateConditional(
         this.layout,
@@ -80,9 +81,9 @@ class MissionControl {
    * Broadcasts a message under the given mode and channel,
    * so long as that mode is active.
    */
-  private broadcastUnderMode(mode: Mode, name: string, message: unknown, channel: string): void {
+  private broadcastUnderMode(mode: Mode, name: string, message: unknown, channel: string, users?: Set<User>): void {
     if (this.currentMode === mode) {
-      this.webServer.broadcast({mode: name, channel, message});
+      this.webServer.broadcast({mode: name, channel, message}, users);
     }
   }
 

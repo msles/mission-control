@@ -2,6 +2,7 @@ import { ImageData } from "canvas";
 import Display from "../display";
 import Layout from "../layout";
 import { LayoutStateReadable } from "../layout/layout-state";
+import { User } from "../users";
 import WebAPI from "../web/api";
 
 /**
@@ -37,7 +38,7 @@ interface Mode {
  */
 export type Frame = Map<Display,ImageData>;
 
-export type BroadcastFn = (message: unknown, channel: string) => void
+export type BroadcastFn = (message: unknown, channel: string, users?: Set<User>) => void
 export type ModeBuilder = (
   broadcast: BroadcastFn,
   layoutState: LayoutStateReadable
