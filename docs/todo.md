@@ -3,17 +3,18 @@
 Remaining items:
 
 ### Server
-- [ ] broadcast layout changes to client
+- [x] broadcast layout changes to client
 - [ ] send all current draw pixels to client
-- [ ] broadcast mode switch to clients
+- [x] broadcast mode switch to clients
 
 ### Web Client
-- [ ] send layout change to server
+- [x] send layout change to server
 - [ ] implement draw component
-- [ ] switch page when mode switches
-- [ ] automatic anonymous sign in
+- [x] switch page when mode switches
+- [x] ~~automatic anonymous sign in~~
 - [ ] QR code (join) for players vs observers
 - [ ] pong - bracketing games
+- [ ] pong - placing obstacles
 
 ### Raspberry Pis
 - [ ] Set up the remaining two pis/displays
