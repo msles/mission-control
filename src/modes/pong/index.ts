@@ -8,7 +8,7 @@ import { acceptAny, createZodParser } from "../../web/parse";
 import GameState from "./game-state";
 import Channel from "../../web/channel";
 
-const PaddleMoveCommand = z.number().int().gte(0);
+const PaddleMoveCommand = z.number().gte(0).lte(1);
 type PaddleMoveCommand = z.infer<typeof PaddleMoveCommand>;
 
 const JoinGameCommand = z.union([z.literal("player"), z.literal("observer")]);
