@@ -111,7 +111,7 @@ class DrawMode implements Mode {
     return this.layoutState.get().map(({display, position}) => ({
       display,
       position,
-      pixels: this.getDisplayData(display, position).data
+      pixels: Array.from(this.getDisplayData(display, position).data)
     }));
   }
 
@@ -129,6 +129,6 @@ class DrawMode implements Mode {
 }
 
 type SerializedCanvas = DisplayPixels[];
-type DisplayPixels = DisplayPosition & {pixels: Uint8ClampedArray};
+type DisplayPixels = DisplayPosition & {pixels: number[]};
 
 export default DrawMode.builder();
