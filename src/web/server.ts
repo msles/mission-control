@@ -119,9 +119,11 @@ class Server {
     if (parseResult.success) {
       const {mode, channel, message} = parseResult.data;
       console.log(parseResult.data);
-      this.getChannels(mode)
-        .filter(ch => ch.name === channel)
-        .forEach(ch => this.parseAndReceive(message, ch, from));
+      const channels = this.getChannels(mode).filter(ch => ch.name === channel);
+      if (channels.length === 0) {
+        console.warn(`No channel ${channel} under mode ${mode ?? 'undefined'}`);
+      }
+      channels.forEach(ch => this.parseAndReceive(message, ch, from));
     }
     else {
       console.warn('Parsing failed on', json.data, parseResult.error);
@@ -212,6 +214,10 @@ class Server {
     const parseResult = channel.parse(query);
     if (parseResult.success) {
       channel.onReceived(parseResult.data, from);
+    }
+    else {
+      console.warn('Failed to parse:', query);
+      console.warn('Reason:', parseResult.error);
     }
   }
 
