@@ -16,10 +16,10 @@ test("painting pixels", () => {
   // refine the type for testing
   const paint = paintChannel as Channel<PaintCommand>;
   // paint a red pixel at (0, 0)
-  paint.onReceived([{
-    coordinates: [0, 0],
+  paint.onReceived({
+    pixels: [[0, 0]],
     color: [255, 0, 0]
-  }], user);
+  }, user);
   const frame = mode.render(state.get());
   const images = Array.from(frame.values());
   expect(images).toHaveLength(1);

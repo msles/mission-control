@@ -14,13 +14,13 @@ import { DisplayPosition, Position } from "../../layout/layout";
 const Natural = z.number().int().gte(0);
 // A Zod Schema for a positive 8-bit integer (0-255).
 const PosInt8 = Natural.lt(256);
+const Coordinate = z.tuple([Natural, Natural]);
+const Color = z.tuple([PosInt8, PosInt8, PosInt8]);
 
-const PaintPixel = z.object({
-  coordinates: z.tuple([Natural, Natural]),
-  color: z.tuple([PosInt8, PosInt8, PosInt8])
+const PaintCommand = z.object({
+  color: Color,
+  pixels: z.array(Coordinate)
 });
-
-const PaintCommand = z.array(PaintPixel);
 
 export type PaintCommand = z.infer<typeof PaintCommand>;
 
@@ -42,7 +42,7 @@ class DrawMode implements Mode {
     this.broadcast = broadcast;
     this.canvas = createCanvas(1, 1).getContext('2d');
     this.layoutState = layoutState;
-    this.layoutState.onLayoutChanged(layout => this.start(layout));
+    this.layoutState.onLayoutChanged(() => this.start());
     this.paintSubject = new Subject();
     this.stopBroadcasting = () => {};
   }
@@ -61,33 +61,36 @@ class DrawMode implements Mode {
       parse: acceptAny(),
       onReceived: (_, user) => this.sync(user)
     }
+    const clearChannel: Channel<void> = {
+      name: 'clear',
+      privileges: Privileges.Player,
+      parse: acceptAny(),
+      onReceived: () => this.clear()
+    }
     return {
       endpoints: [],
-      channels: [paintChannel, syncChannel]
+      channels: [paintChannel, syncChannel, clearChannel]
     }
   }
 
-  private paint(pixels: PaintCommand) {
-    pixels.forEach(pixel => {
-      this.canvas.fillStyle = `rgb(${pixel.color[0]},${pixel.color[1]},${pixel.color[2]})`;
-      this.canvas.fillRect(pixel.coordinates[0], pixel.coordinates[1], 1, 1);
+  private paint(command: PaintCommand) {
+    this.canvas.fillStyle = `rgb(${command.color[0]},${command.color[1]},${command.color[2]})`;
+    command.pixels.forEach(pixel => {
+      this.canvas.fillRect(pixel[0], pixel[1], 1, 1);
     });
-    this.paintSubject.next(pixels);
+    this.paintSubject.next(command);
   }
 
-  start(layout: Layout): void {
-    const [width, height] = layoutBounds(layout);
-    this.canvas = createCanvas(
-      Math.max(width, 1),
-      Math.max(height, 1)
-    ).getContext('2d');
+  start(): void {
+    const [width, height] = this.getCanvasSize();
+    this.canvas = createCanvas(width, height).getContext('2d');
     const throttled = this.paintSubject
       .pipe(throttleTime(DrawMode.BUFFER_TIME_MS));
     const subscription = this.paintSubject
       .pipe(buffer(throttled))
-      .pipe(map(commands => commands.flat()))
       .subscribe(pixels => this.broadcast(pixels, 'paint'));
     this.stopBroadcasting = () => subscription.unsubscribe();
+    this.sync();
   }
 
   stop(): void {
@@ -103,8 +106,21 @@ class DrawMode implements Mode {
     );
   }
 
-  private sync(user: User): void {
-    this.broadcast(this.serializeCanvas(), 'canvas', new Set([user]));
+  private sync(user?: User): void {
+    const users = user && new Set([user]);
+    this.broadcast(this.serializeCanvas(), 'canvas', users);
+  }
+
+  private clear(): void {
+    const [width, height] = this.getCanvasSize();
+    this.canvas.fillStyle = '#000';
+    this.canvas.fillRect(0, 0, width, height);
+    this.sync();
+  }
+
+  private getCanvasSize(): readonly [number, number] {
+    const [width, height] = layoutBounds(this.layoutState.get());
+    return [Math.max(width, 1), Math.max(height, 1)]
   }
 
   private serializeCanvas(): SerializedCanvas {
