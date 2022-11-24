@@ -6,7 +6,7 @@ import {z} from "zod";
 import { createZodParser, ParseBuilder } from "../web/parse";
 
 // The schema for requesting a mode switch
-const ModeSwitchCommand = z.object({name: z.string()});
+const ModeSwitchCommand = z.string();
 
 export class ModeAPI {
 
@@ -29,7 +29,7 @@ export class ModeAPI {
       name: 'mode',
       privileges: Privileges.Admin,
       parse: new ParseBuilder(createZodParser(ModeSwitchCommand))
-        .chain(({name}) => {
+        .chain(name => {
           const mode = this.modes.get(name);
           return mode ?
             {success: true, data: [mode, name] as const} :
