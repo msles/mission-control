@@ -118,7 +118,6 @@ class Server {
     const parseResult = ChannelMessage.safeParse(json.data);
     if (parseResult.success) {
       const {mode, channel, message} = parseResult.data;
-      console.log(parseResult.data);
       const channels = this.getChannels(mode).filter(ch => ch.name === channel);
       if (channels.length === 0) {
         console.warn(`No channel ${channel} under mode ${mode ?? 'undefined'}`);
