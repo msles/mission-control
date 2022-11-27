@@ -1,8 +1,6 @@
 import { Service as PixelPusher, Device as PixelDevice } from "node-pixel-pusher";
 import Display, { DisplayType } from "../display/display";
 import { LayoutStateWritable } from "../layout";
-import { Frame } from "../modes/mode";
-
 class PixelServer {
 
   private readonly layoutState: LayoutStateWritable;
@@ -56,14 +54,18 @@ class PixelServer {
   }
 
   private renderTo(device: PixelDevice, display: Display) {
-    const image = this.render().get(display);
+    // console.time('render');
+    const image = this.render(display);
+    // console.timeEnd('render');
     if (image) {
+      // console.time('push');
       device.setRGBABuffer(image.data);
+      // console.timeEnd('push');
     }
   }
 
 }
 
-type RenderFn = () => Frame;
+type RenderFn = (display: Display) => ImageData;
 
 export default PixelServer;

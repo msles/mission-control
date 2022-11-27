@@ -32,8 +32,7 @@ class MissionControl {
     this.currentMode = mode;
     this.pixelServer = new PixelServer(
       this.layout,
-      // Inefficient method of rendering... re-renders for each display
-      () => this.currentMode.render(this.layout.get())
+      display => this.currentMode.render(display)
     );
     this.layoutAPI = new LayoutAPI(this.layout, this.webServer);
     this.modeAPI = new ModeAPI(this.webServer, name, this.modes, mode => this.switchMode(mode));

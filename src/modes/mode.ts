@@ -29,14 +29,9 @@ interface Mode {
    * Draw the mode as a set of images to be shown on the given displays.
    * @param layout The current arrangement of display to render to.
    */
-  render(layout: Layout): Frame
+  render(display: Display): ImageData
 
 }
-
-/**
- * The graphics to show across multiple displays.
- */
-export type Frame = Map<Display,ImageData>;
 
 export type BroadcastFn = (message: unknown, channel: string, users?: Set<User>) => void
 export type ModeBuilder = (

@@ -97,13 +97,15 @@ class DrawMode implements Mode {
     this.stopBroadcasting();
   }
 
-  render(layout: Layout): Map<Display, ImageData> {
-    return new Map(
-      layout.map(({display, position}) => [
-        display,
-        this.getDisplayData(display, position)
-      ])
-    );
+  render(display: Display): ImageData {
+    const {position} = this.layoutState.get().find(item => item.display === display) ?? {position: undefined};
+    if (position) {
+      return this.getDisplayData(display, position);
+    }
+    else {
+      console.warn('Display not found:', display);
+      return new ImageData(display.resolution[0], display.resolution[1]);
+    }
   }
 
   private sync(user?: User): void {
