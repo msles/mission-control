@@ -22,11 +22,7 @@ class MissionControl {
     if (modeBuilders.length === 0) {
       throw new Error("At least one mode is required.");
     }
-    this.layout = new LayoutState([
-      // mock a default layout with two displays
-      {display: {type: DisplayType.Matrix, resolution: [64, 64]}, position: [0, 0]},
-      {display: {type: DisplayType.Matrix, resolution: [64, 64]}, position: [0, 0]}
-    ]);
+    this.layout = new LayoutState([]);
     const modes = modeBuilders.map(
       ([name, builder]) => [name, this.buildMode(builder, name)] as const
     );
