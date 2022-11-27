@@ -8,6 +8,7 @@ class PixelServer {
   private readonly layoutState: LayoutStateWritable;
   private readonly displays: Map<string, readonly [PixelDevice, Display]>;
   private readonly render: RenderFn;
+  private static readonly MAX_FPS = 30;
 
   constructor(layoutState: LayoutStateWritable, render: RenderFn) {
     this.layoutState = layoutState;
@@ -37,7 +38,7 @@ class PixelServer {
     }
     this.displays.set(macAddress, [device, display]);
     this.layoutState.addDisplayRight(display);
-    device.startRendering(() => this.renderTo(device, display));
+    this.startRendering(device, display);
   }
 
   private updateDevice(existing: readonly [PixelDevice, Display], newDevice: PixelDevice) {
@@ -47,7 +48,11 @@ class PixelServer {
     if (!this.layoutState.has(display)) {
       this.layoutState.addDisplayRight(display);
     }
-    newDevice.startRendering(() => this.renderTo(newDevice, display));
+    this.startRendering(newDevice, display);
+  }
+
+  private startRendering(device: PixelDevice, display: Display) {
+    device.startRendering(() => this.renderTo(device, display), PixelServer.MAX_FPS);
   }
 
   private renderTo(device: PixelDevice, display: Display) {
