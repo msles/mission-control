@@ -16,8 +16,8 @@ class PixelWorkerThread {
     this.server = new PixelServer(this.layout, display => this.render(display));
   }
 
-  private render(display: Display): Uint8ClampedArray {
-    return this.frame.get(display) ?? new Uint8ClampedArray([0]);
+  private render(display: Display): Uint8ClampedArray|undefined {
+    return this.frame.get(display);
   }
 
   start() {

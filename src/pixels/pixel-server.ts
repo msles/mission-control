@@ -68,6 +68,6 @@ class PixelServer {
 
 }
 
-type RenderFn = (display: Display) => Uint8ClampedArray;
+type RenderFn = (display: Display) => Uint8ClampedArray|undefined;
 
 export default PixelServer;
