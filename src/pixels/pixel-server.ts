@@ -31,6 +31,8 @@ class PixelServer {
   private addDevice(device: PixelDevice) {
     const {macAddress, pixelsPerStrip, numberStrips} = device.deviceData;
     const display: Display<DisplayType.Matrix> = {
+      // does not need to be cryptographically random
+      id: Math.random().toString(36).slice(3),
       type: DisplayType.Matrix,
       resolution: [pixelsPerStrip, numberStrips]
     }
@@ -59,13 +61,13 @@ class PixelServer {
     // console.timeEnd('render');
     if (image) {
       // console.time('push');
-      device.setRGBABuffer(image.data);
+      device.setRGBABuffer(image);
       // console.timeEnd('push');
     }
   }
 
 }
 
-type RenderFn = (display: Display) => ImageData;
+type RenderFn = (display: Display) => Uint8ClampedArray;
 
 export default PixelServer;
