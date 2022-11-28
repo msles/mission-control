@@ -1,6 +1,6 @@
 import { ImageData, createCanvas, CanvasRenderingContext2D as Context2D } from "canvas";
 import Display from "../../display";
-import Mode, { BroadcastFn, ModeBuilder } from "../mode";
+import Mode, { BroadcastFn, Frame, ModeBuilder } from "../mode";
 import WebAPI from "../../web/api";
 import { Privileges, User } from "../../users";
 import Layout, {layoutBounds, LayoutStateReadable} from "../../layout";
@@ -97,15 +97,13 @@ class DrawMode implements Mode {
     this.stopBroadcasting();
   }
 
-  render(display: Display): ImageData {
-    const {position} = this.layoutState.get().find(item => item.display === display) ?? {position: undefined};
-    if (position) {
-      return this.getDisplayData(display, position);
-    }
-    else {
-      console.warn('Display not found:', display);
-      return new ImageData(display.resolution[0], display.resolution[1]);
-    }
+  render(layout: Layout): Frame {
+    return new Map(
+      layout.map(({display, position}) => [
+        display,
+        this.getDisplayData(display, position)
+      ])
+    );
   }
 
   private sync(user?: User): void {
