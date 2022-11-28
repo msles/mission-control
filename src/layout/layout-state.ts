@@ -24,6 +24,8 @@ export interface LayoutStateWritable extends LayoutStateReadable {
    */
   moveDisplay(display: Display, position: Position): void;
 
+  updateLayout(layout: Layout): void;
+
 }
 
 /**
@@ -77,7 +79,7 @@ class LayoutState implements LayoutStateWritable {
         {display, position: to} : {display, position}));
   }
 
-  private updateLayout(newLayout: Layout) {
+  updateLayout(newLayout: Layout) {
     this.layout = normalizeLayout(newLayout);
     Array.from(this.handlers)
       .forEach(handler => handler(this.layout));

@@ -1,17 +1,16 @@
 import LayoutState, { LayoutStateConditional } from "./layout/layout-state";
 import Mode, { ModeAPI, ModeBuilder } from "./modes";
-import { PixelServer } from "./pixels";
 import WebAPI from "./web/api";
 import { WithParseStage } from "./web/parse";
 import WebServer from "./web/server";
 import { LayoutAPI } from "./layout";
-import { DisplayType } from "./display";
 import { User } from "./users";
+import { PixelWorker } from "./pixels/pixel-worker";
 
 class MissionControl {
 
   private readonly webServer: WebServer;
-  private readonly pixelServer: PixelServer;
+  private readonly pixelServer: PixelWorker;
   private readonly modes: Map<string, Mode>;
   private readonly layoutAPI: LayoutAPI;
   private readonly modeAPI: ModeAPI;
@@ -30,10 +29,7 @@ class MissionControl {
     this.webServer = new WebServer();
     const [name, mode] = modes[0];
     this.currentMode = mode;
-    this.pixelServer = new PixelServer(
-      this.layout,
-      display => this.currentMode.render(display)
-    );
+    this.pixelServer = new PixelWorker(this.layout);
     this.layoutAPI = new LayoutAPI(this.layout, this.webServer);
     this.modeAPI = new ModeAPI(this.webServer, name, this.modes, mode => this.switchMode(mode));
     this.configureWebServer();
@@ -41,7 +37,9 @@ class MissionControl {
 
   async start() {
     this.currentMode.start(this.layout.get());
-    this.pixelServer.start();
+    setInterval(() => this.pixelServer.render(this.currentMode.render(this.layout.get())), 33);
+    // Pixel server now starts immediately upon construction
+    // ~~this.pixelServer.start();~~
     await this.webServer.start(8000);
   }
 
