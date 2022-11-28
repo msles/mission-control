@@ -7,6 +7,7 @@ import { z } from "zod";
 import { acceptAny, createZodParser } from "../../web/parse";
 import GameState from "./game-state";
 import Channel from "../../web/channel";
+import { chunk, delayMilliseconds } from "./utils";
 
 const PaddleMoveCommand = z.number().gte(0).lte(1);
 type PaddleMoveCommand = z.infer<typeof PaddleMoveCommand>;
@@ -44,19 +45,51 @@ class PongMode implements Mode {
   }
 
   private startGame(): void {
-    if (this.players.size >= 2) {
-      // just create one game for now
-      const [p1, p2] = Array.from(this.players);
-      // for now, just take the first display
-      const runner = new GameRunner([p1, p2], this.observers, this.layout.get().slice(0, 1));
-      this.players.forEach(player => this.games.set(player, runner));
-      this.observers.forEach(observer => this.games.set(observer, runner));
+    this.runTournament(Array.from(this.players), 1)
+      .then(winner => winner ? console.log('Winner!') : console.log('Tournament exited.'))
+      .catch(err => console.warn('Failed to run tournament to completion', err))
+      .finally(() => this.players.clear());
+  }
+
+  private async runTournament(players: readonly User[], displaysPerGame: number): Promise<User|undefined> {
+    if (players.length <= 1) {
+      return players[0];
+    }
+    console.log('Running round with', players.length, 'players and', displaysPerGame, 'displays per game.');
+    const layouts = chunk(this.layout.get(), displaysPerGame);
+    console.dir(layouts);
+    const runners = this.createGames(layouts, players, Array.from(this.observers));
+    console.log('Number of games:', runners.length);
+    const winners = await this.runGames(runners);
+    return await this.runTournament(winners, displaysPerGame + 1);
+  }
+
+  private createGames(layouts: readonly Layout[], players: readonly User[], observers: readonly User[]): GameRunner[] {
+    const numGames = Math.min(Math.floor(players.length / 2), layouts.length);
+    if (numGames === 0) {
+      return [];
+    }
+    const observerGroups = chunk(Array.from(observers), numGames);
+    return layouts
+      .slice(0, numGames)
+      .map((layout, index) => {
+        const [p1, p2] = players.slice(index, index + 2);
+        return new GameRunner([p1, p2], new Set(observerGroups[index]), layout);
+      });
+  }
+
+  private async runGames(runners: GameRunner[]): Promise<readonly User[]> {
+    runners.forEach(runner => {
       this.runners.add(runner);
-      runner.start();
-    }
-    else {
-      console.warn("Too few players to start a game.");
-    }
+      runner.players.forEach(player => this.games.set(player, runner));
+      runner.observers.forEach(observer => this.games.set(observer, runner));
+    });
+    const results = await Promise.allSettled(runners.map(runner => runner.start()));
+    await delayMilliseconds(1_000);
+    this.runners.clear();
+    const winners: User[] = [];
+    results.forEach(res => res.status === 'fulfilled' && winners.push(res.value));
+    return winners;
   }
 
   private stopGame(game: GameRunner): void {
@@ -130,7 +163,7 @@ class PongMode implements Mode {
     }
   }
 
-  render(_layout: Layout): Frame {
+  render(): Frame {
     const frame: Frame = new Map();
     this.runners.forEach(runner => {
       for (const [display, image] of runner.render().entries()) {
@@ -148,6 +181,8 @@ class PongMode implements Mode {
 
 class GameRunner {
 
+  public readonly players: readonly [User, User];
+  public readonly observers: Set<User>;
   private readonly game: GameState;
   private readonly size: readonly [number, number];
   private readonly layout: Layout;
@@ -155,9 +190,11 @@ class GameRunner {
   private stopRunning: () => void;
 
   constructor(players: readonly [User, User], observers: Set<User>, layout: Layout) {
+    this.players = players;
+    this.observers = observers;
     this.layout = normalizeLayout(layout);
     this.size = layoutBounds(this.layout);
-    this.game = new GameState(players, observers, this.size);
+    this.game = new GameState(this.players, this.observers, this.size);
     this.canvas = createCanvas(this.size[0], this.size[1]).getContext('2d');
     this.stopRunning = () => {};
   }
@@ -166,10 +203,21 @@ class GameRunner {
    * Start the game loop. This method restarts the game loop
    * if it was already started.
    */
-  start() {
+  start(): Promise<User> {
     this.stopRunning();
-    const interval = setInterval(() => this.game.tick(33), 33);
-    this.stopRunning = () => clearInterval(interval);
+    return new Promise((resolve, reject) => {
+      const interval = setInterval(() => {
+        const winner = this.game.tick(33);
+        if (winner) {
+          clearInterval(interval);
+          resolve(winner);
+        }
+      }, 33);
+      this.stopRunning = () => {
+        clearInterval(interval);
+        reject(new Error("Game interrupted"));
+      };
+    });
   }
 
   /**
@@ -183,9 +231,7 @@ class GameRunner {
    * Move the player's paddle if it within the bounds of the board size.
    */
   movePaddle(player: User, y: number) {
-    if (y < this.size[1]) {
-      this.game.movePaddle(player, y);
-    }
+    this.game.movePaddle(player, y);
   }
 
   /**
