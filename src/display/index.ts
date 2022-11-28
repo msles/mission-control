@@ -1,4 +1,4 @@
-import Display, {DisplayType} from "./display";
+import Display, {DisplayType, DisplayID} from "./display";
 
 export default Display;
-export {DisplayType};
+export {DisplayType, DisplayID};
