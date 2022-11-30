@@ -39,7 +39,7 @@ class GameState<User=U> {
     this.size = size;
     this.paddles = this.createPaddles(players);
     this.balls = new Set([this.createBall()]);
-    this.obstacles = new Set([this.createObstacle()]);
+    this.obstacles = new Set();
   }
 
   private createPlayers(users: readonly [User, User]): Players<User> {
@@ -65,16 +65,15 @@ class GameState<User=U> {
     return new Ball([x, y], Math.min(x, y) / 32);
   }
 
-  private createObstacle(): Block {
-    return new Block([48, 32], [4,4], true);
-  }
-
   movePaddle(player: User, y: number): void {
     this.paddles.get(player)?.move(([x, _]) => [x, Math.floor(y * this.size[1])]);
   }
 
-  placeObstacle(obstacle: Obstacle): void {
-    
+  placeObstacle(x: number, y: number): void {
+    this.obstacles.add(new Block([
+      Math.floor(5 + (this.size[0] - 5) * x),
+      Math.floor(y * this.size[1])
+    ], [4, 4]));
   }
 
   mergeGames(otherGame: GameState<User>): GameState<User> {
@@ -91,12 +90,17 @@ class GameState<User=U> {
     this.balls.forEach(ball => ball.checkVerticalBounds(this.size[1], this.size[1]));
     this.balls.forEach(ball => ball.checkVerticalBounds(0, this.size[1]));
     //check horizontal bounds based on size of the canvas
-    this.balls.forEach(ball => ball.checkHorizontalBounds(0, this.size[0], this.players[1]));
-    this.balls.forEach(ball => ball.checkHorizontalBounds(this.size[0], this.size[0], this.players[0]));
+    const scored = Array.from(this.balls).some(ball => {
+      return ball.checkHorizontalBounds(0, this.size[0], this.players[1]) ||
+             ball.checkHorizontalBounds(this.size[0], this.size[0], this.players[0])
+    });
     //Check obstacle collision
     Array.from(this.obstacles.values()).forEach(Block => {
       this.balls.forEach(ball => Block.collideWithObstacle(ball))
     });
+    if (scored) {
+      this.obstacles.clear();
+    }
     return this.players.find(player => player.reachedScore(5))?.user;
   }
 
@@ -216,16 +220,17 @@ class Ball extends Entity2D {
 
   render(ctx: Context2D): void {
     ctx.fillStyle = 'white';
+    /*
     ctx.beginPath();
     ctx.arc(this.position[0], this.position[1], this.radius, 0, Math.PI * 2);
     ctx.fill();
-    /*
+    */
     ctx.fillRect(
       this.position[0] - this.radius / 2,
       this.position[1] - this.radius / 2,
       this.radius * 2,
       this.radius * 2
-    )*/
+    )
   }
 
   tick(delta: number): Entity {
@@ -286,7 +291,7 @@ class Ball extends Entity2D {
     }
   }
 
-  checkHorizontalBounds<User>(x: number, size: number, player: Player<User>) {
+  checkHorizontalBounds<User>(x: number, size: number, player: Player<User>): boolean {
     //score based on which side the ball is on + how to access these variables
     //should we change the velocity to go towards the other player here or somewhere else?
     if (this.position[0] + this.radius <= x && x != size){
@@ -294,13 +299,16 @@ class Ball extends Entity2D {
       this.position = [size/2, 32];
       this.velocity = [-.014, this.velocity[1]];
       player.addPoint();
+      return true;
     }
     else if (this.position[0] - this.radius >= x && x != 0){
       //add 1 to player 2 score
       this.position = [size/2, 32];
       this.velocity = [.014, this.velocity[1]]
       player.addPoint();
+      return true;
     }
+    return false;
   }
 
 }
@@ -312,12 +320,10 @@ interface Obstacle {
 class Block extends Entity2D implements Obstacle
 {
   private readonly size: Vec;
-  private readonly side: boolean;
 
-  constructor(position: Vec, size: Vec, side: boolean) {
+  constructor(position: Vec, size: Vec) {
     super(position);
     this.size = size;
-    this.side = side;
   }
 
   render(ctx: Context2D): void {
