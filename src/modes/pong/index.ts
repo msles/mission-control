@@ -206,15 +206,19 @@ class GameRunner {
   start(): Promise<User> {
     this.stopRunning();
     return new Promise((resolve, reject) => {
-      const interval = setInterval(() => {
+      const tickInterval = setInterval(() => {
         const winner = this.game.tick(33);
         if (winner) {
-          clearInterval(interval);
+          clearInterval(tickInterval);
           resolve(winner);
         }
       }, 33);
+      const obstacleInterval = setInterval(() => {
+        this.game.placeObstacle(Math.random(), Math.random());
+      }, 4_000);
       this.stopRunning = () => {
-        clearInterval(interval);
+        clearInterval(obstacleInterval);
+        clearInterval(tickInterval);
         reject(new Error("Game interrupted"));
       };
     });
